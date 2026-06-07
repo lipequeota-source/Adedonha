@@ -147,8 +147,13 @@ let state = {
     timeLeft: 60,
     wordsToEvaluate: [],
     currentEvaluationThemeIndex: 0,
-    isResults: false
+    isResults: false,
+    hasSubmitted: false,
+    votes: {},
+    evalTimerInterval: null,
+    currentEvalEndTime: null
 };
+let lastRenderedThemeIndex = -1;
 
 // --- FUNÇÕES UTILITÁRIAS ---
 function escapeHTML(str) {
@@ -668,12 +673,17 @@ async function leaveRoom() {
 
 function forceLeaveRoom(stayInLobby = false) {
     if (reactionListenerUnsubscribe) reactionListenerUnsubscribe();
+    if (state.evalTimerInterval) clearInterval(state.evalTimerInterval);
     state.isPlaying = false;
     state.isEvaluating = false;
     state.isChoosingLetter = false;
     state.isRoulette = false;
     state.isResults = false;
     state.currentEvaluationThemeIndex = 0;
+    state.hasSubmitted = false;
+    state.votes = {};
+    state.currentEvalEndTime = null;
+    lastRenderedThemeIndex = -1;
     if(state.hostPhaseTimer) clearTimeout(state.hostPhaseTimer);
     
     if (!stayInLobby) {
@@ -761,7 +771,6 @@ async function advanceToRoulette(roomData) {
         rouletteEndTime: Date.now() + 5000,
         gameState: {
             playersOrder: playerNames,
-            currentTurnIndex: 0,
             turnEndTime: 0,
             roundLetter: pickedLetter,
             submittedLetters: submittedLetters,
@@ -833,17 +842,29 @@ function prepareOnlineGame(gameState) {
 function syncOnlineGame(gameState) {
     if (!gameState) return;
     state.roundAnswers = gameState.answers || {};
+    state.votes = gameState.votes || {};
 
-    if (gameState.currentTurnIndex >= state.players.length) {
-        // Todos jogaram
+    const playersCount = state.players.length;
+    const answersCount = Object.keys(state.roundAnswers).length;
+
+    // Se todos já enviaram as respostas (porque alguém deu STOP ou o tempo acabou)
+    if (answersCount >= playersCount) {
         if (!state.isEvaluating) {
             state.isEvaluating = true;
             clearInterval(state.timerInterval);
+            if (currentRoomData.hostId === currentUser.id && !gameState.evalEndTime) {
+                update(ref(db, `rooms/${currentRoomId}/gameState`), { evalEndTime: Date.now() + 17000 }); // 2s da animação + 15s de tempo real
+            }
             processAnswersAndEvaluate();
         } else {
             // Sincroniza o progresso da tela de avaliação se já estiver nela
             const remoteEvalIndex = gameState.evalIndex || 0;
             const remoteEvalFinished = gameState.isEvalFinished || false;
+
+            if (gameState.evalEndTime && state.currentEvalEndTime !== gameState.evalEndTime) {
+                state.currentEvalEndTime = gameState.evalEndTime;
+                startEvalTimer(gameState.evalEndTime);
+            }
 
             if (remoteEvalFinished && !state.isResults) {
                 state.isResults = true;
@@ -858,51 +879,32 @@ function syncOnlineGame(gameState) {
         return;
     }
 
-    const activePlayer = state.players[gameState.currentTurnIndex];
-    state.currentPlayerIndex = gameState.currentTurnIndex;
-    const isMyTurn = activePlayer === currentUser.name;
-
+    // Jogo rolando para todos simultaneamente!
     const isHost = currentRoomData && currentRoomData.hostId === currentUser.id;
     DOM.btnSkipTurn.classList.toggle('hidden', !isHost || gameState.turnEndTime === 0);
 
-    if (gameState.turnEndTime === 0) {
-        // Aguardando jogador iniciar o turno
-        DOM.currentPlayerDisplay.textContent = activePlayer;
-        DOM.roundLetterDisplay.textContent = state.roundLetter;
-        DOM.btnStartTurn.style.display = isMyTurn ? 'block' : 'none';
-        
-        showScreen(DOM.turnTransition);
-        clearInterval(state.timerInterval);
-    } else {
-        // Turno rolando com tempo em andamento
-        if (!DOM.game.classList.contains('active')) {
-            startTurnUI(activePlayer, isMyTurn);
-        }
-        
-        clearInterval(state.timerInterval);
-        state.timerInterval = setInterval(() => {
-            // Relógio baseado na hora universal para manter todos em sincronia
-            const timeLeft = Math.max(0, Math.ceil((gameState.turnEndTime - Date.now()) / 1000));
-            DOM.gameTimer.textContent = timeLeft;
-            
-            if (timeLeft <= 0) {
-                clearInterval(state.timerInterval);
-                if (isMyTurn) endOnlineTurn();
-            }
-        }, 1000);
+    if (!DOM.game.classList.contains('active')) {
+        startTurnUI();
     }
+    
+    clearInterval(state.timerInterval);
+    state.timerInterval = setInterval(() => {
+        // Relógio baseado na hora universal para manter todos em sincronia
+        const timeLeft = Math.max(0, Math.ceil((gameState.turnEndTime - Date.now()) / 1000));
+        DOM.gameTimer.textContent = timeLeft;
+        
+        if (timeLeft <= 0) {
+            clearInterval(state.timerInterval);
+            if (!state.hasSubmitted) endOnlineTurn();
+        }
+    }, 1000);
 }
 
-DOM.btnStartTurn.addEventListener('click', async () => {
-    await update(ref(db, `rooms/${currentRoomId}/gameState`), {
-        turnEndTime: Date.now() + 60000 // Inicia 60 segundos cravados para todos
-    });
-});
-
-function startTurnUI(playerName, isMyTurn) {
-    DOM.gamePlayer.textContent = playerName;
+function startTurnUI() {
+    DOM.gamePlayer.textContent = "TODOS JOGANDO";
     DOM.gameLetter.textContent = state.roundLetter;
     
+    DOM.btnStop.disabled = true; // Bloqueado até responder algo
     DOM.themesContainer.innerHTML = '';
     state.currentThemes.forEach(theme => {
         const div = document.createElement('div');
@@ -910,33 +912,27 @@ function startTurnUI(playerName, isMyTurn) {
         div.innerHTML = `
             <label>${theme}</label>
             <div class="theme-input-wrapper">
-                <input type="text" class="apple-input theme-answer" data-theme="${theme}" autocomplete="off" maxlength="40" ${!isMyTurn ? 'disabled' : ''} placeholder="${!isMyTurn ? 'Aguardando jogador...' : ''}">
+                <input type="text" class="apple-input theme-answer" data-theme="${theme}" autocomplete="off" maxlength="40" placeholder="Sua resposta...">
             </div>
         `;
         DOM.themesContainer.appendChild(div);
         
-        if (isMyTurn) {
-            const inputEl = div.querySelector('.theme-answer');
-            inputEl.addEventListener('input', (e) => {
-                const val = normalizeString(e.target.value);
-                const expectedInitial = normalizeString(state.roundLetter);
-                
-                if (val && val.startsWith(expectedInitial)) {
-                    const dict = DICTIONARY[theme] || [];
-                    const isCorrect = dict.some(word => normalizeString(word) === val);
-                    if (isCorrect) {
-                        e.target.classList.add('input-success');
-                    } else {
-                        e.target.classList.remove('input-success');
-                    }
-                } else {
-                    e.target.classList.remove('input-success');
-                }
-            });
-        }
+        const inputEl = div.querySelector('.theme-answer');
+        inputEl.addEventListener('input', (e) => {
+            const val = normalizeString(e.target.value);
+            const expectedInitial = normalizeString(state.roundLetter);
+            if (val && val.startsWith(expectedInitial)) {
+                e.target.classList.add('input-success');
+            } else {
+                e.target.classList.remove('input-success');
+            }
+            // Libera o botão se pelo menos um campo tiver algum texto (sem ser só espaço)
+            const anyFilled = Array.from(document.querySelectorAll('.theme-answer')).some(input => input.value.trim().length > 0);
+            DOM.btnStop.disabled = !anyFilled;
+        });
     });
 
-    DOM.btnStop.style.display = isMyTurn ? 'block' : 'none';
+    DOM.btnStop.style.display = 'block';
     showScreen(DOM.game);
 }
 
@@ -1004,14 +1000,15 @@ function showReactionAnimation(text, color) {
 // Submeter jogo (STOP) apertando ENTER
 document.addEventListener('keydown', (e) => {
     // Verifica se a tela ativa é a de Jogo e se o botão STOP está visível (indicando que é a minha vez)
-    if (e.key === 'Enter' && DOM.game.classList.contains('active') && DOM.btnStop.style.display === 'block') {
+    if (e.key === 'Enter' && DOM.game.classList.contains('active') && DOM.btnStop.style.display === 'block' && !DOM.btnStop.disabled) {
         endOnlineTurn();
     }
 });
 
 async function endOnlineTurn() {
+    if (state.hasSubmitted) return;
+    state.hasSubmitted = true;
     clearInterval(state.timerInterval);
-    const playerName = currentUser.name;
     
     const inputs = document.querySelectorAll('.theme-answer');
     const myAnswers = {};
@@ -1020,9 +1017,12 @@ async function endOnlineTurn() {
     });
 
     const updates = {};
-    updates[`rooms/${currentRoomId}/gameState/answers/${playerName}`] = myAnswers;
-    updates[`rooms/${currentRoomId}/gameState/currentTurnIndex`] = state.currentPlayerIndex + 1;
-    updates[`rooms/${currentRoomId}/gameState/turnEndTime`] = 0;
+    updates[`rooms/${currentRoomId}/gameState/answers/${currentUser.name}`] = myAnswers;
+
+    // Se o tempo ainda não acabou e alguém mandou STOP, força o tempo ir a 0 e avisa aos outros computadores
+    if (currentRoomData && currentRoomData.gameState && currentRoomData.gameState.turnEndTime > Date.now()) {
+        updates[`rooms/${currentRoomId}/gameState/turnEndTime`] = Date.now();
+    }
 
     await update(ref(db), updates);
 }
@@ -1044,30 +1044,14 @@ function processAnswersAndEvaluate() {
             const answer = normalizeString(rawAnswer);
             const expectedInitial = normalizeString(state.roundLetter);
 
-            let status = 'pending'; // pending, accepted, rejected
+            let status = 'voting'; // Agora tudo vai para votação aberta!
             const inputEl = playerName === currentUser.name ? document.querySelector(`.theme-answer[data-theme="${theme}"]`) : null;
 
-            if (!answer) {
-                status = 'rejected'; // Vazio é errado
+            if (!answer || !answer.startsWith(expectedInitial)) {
+                status = 'rejected'; // Vazio ou Letra errada não tem papo
                 if (playerName === currentUser.name) {
                     erros++;
                     if(inputEl) inputEl.classList.add('shake');
-                }
-            } else if (!answer.startsWith(expectedInitial)) {
-                status = 'rejected'; // Letra errada
-                if (playerName === currentUser.name) {
-                    erros++;
-                    if(inputEl) inputEl.classList.add('shake');
-                }
-            } else {
-                const dict = DICTIONARY[theme] || [];
-                const found = dict.some(word => normalizeString(word) === answer);
-                
-                if (found) {
-                    status = 'accepted'; // IA conhece
-                    if (playerName === currentUser.name) acertos++;
-                } else {
-                    state.wordsToEvaluate.push({ playerName, theme, rawAnswer, answer, status: 'pending' });
                 }
             }
             
@@ -1105,12 +1089,18 @@ function renderEvaluationScreen() {
 
     // Adiciona o Wrapper da Animação CSS
     const animWrapper = document.createElement('div');
-    animWrapper.className = 'slide-in-right';
+    if (state.currentEvaluationThemeIndex !== lastRenderedThemeIndex) {
+        animWrapper.className = 'slide-in-right';
+        lastRenderedThemeIndex = state.currentEvaluationThemeIndex;
+    }
 
     const themeSection = document.createElement('div');
     themeSection.className = 'eval-theme-section';
     themeSection.innerHTML = `
-        <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 5px; font-weight: 600;">${progressText}</div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+            <div style="font-size: 14px; color: var(--text-secondary); font-weight: 600;">${progressText}</div>
+            <div id="eval-countdown" style="font-size: 16px; font-weight: bold; color: var(--red-apple);">⏳ ...</div>
+        </div>
         <h3 style="color: var(--blue-apple); border-bottom: 2px solid var(--blue-apple); padding-bottom: 5px; text-align: left;">${theme}</h3>
     `;
     
@@ -1133,27 +1123,25 @@ function renderEvaluationScreen() {
         let statusText = '';
         let actionsHTML = '';
         
-        if (ansData.status === 'accepted') {
-            statusText = `<span style="color: var(--green-apple); font-weight: bold; font-size: 13px;">✔ Sistema aprovou</span>`;
+        if (ansData.status === 'accepted') { // Exibido apenas caso o Host feche o voto daquele tema
+            statusText = `<span style="color: var(--green-apple); font-weight: bold; font-size: 13px;">✔ Aceito pela maioria</span>`;
         } else if (ansData.status === 'rejected') {
             statusText = `<span style="color: var(--red-apple); font-weight: bold; font-size: 13px;">✖ Incorreto ou Vazio</span>`;
         } else {
-            statusText = `<span style="color: #ff9500; font-weight: bold; font-size: 13px;">⚠ Sistema não reconheceu</span>`;
+            statusText = `<span style="color: #ff9500; font-weight: bold; font-size: 13px;">Votação Aberta</span>`;
             
-            if (isHost) {
-                actionsHTML = `
-                    <div class="eval-actions" style="margin-top: 8px; width: 100%; display: flex; justify-content: space-around;">
-                        <button class="btn-text btn-accept" data-player="${playerName}" data-theme="${theme}" style="background: rgba(52, 199, 89, 0.1);">👍 Válido</button>
-                        <button class="btn-text btn-reject" data-player="${playerName}" data-theme="${theme}" style="color:var(--red-apple); background: rgba(255, 59, 48, 0.1);">👎 Inválido</button>
-                    </div>
-                `;
-            } else {
-                actionsHTML = `
-                    <div style="margin-top: 8px; font-size: 12px; color: var(--text-secondary); width: 100%; text-align: center;">
-                        Aguardando o Host julgar...
-                    </div>
-                `;
-            }
+            const votesForThis = state.votes?.[playerName]?.[theme] || {};
+            const upvotes = Object.values(votesForThis).filter(v => v === 'accept').length;
+            const downvotes = Object.values(votesForThis).filter(v => v === 'reject').length;
+            const myVote = votesForThis[currentUser.name];
+
+            // Agora todo mundo pode votar na reposta dos outros (e na sua própria)
+            actionsHTML = `
+                <div class="eval-actions" style="margin-top: 8px; width: 100%; display: flex; justify-content: space-around;">
+                    <button class="btn-text btn-vote-accept" data-player="${playerName}" data-theme="${theme}" style="background: ${myVote === 'accept' ? 'var(--green-apple)' : 'rgba(52, 199, 89, 0.1)'}; color: ${myVote === 'accept' ? 'white' : 'var(--green-apple)'}">👍 Válido (${upvotes})</button>
+                    <button class="btn-text btn-vote-reject" data-player="${playerName}" data-theme="${theme}" style="background: ${myVote === 'reject' ? 'var(--red-apple)' : 'rgba(255, 59, 48, 0.1)'}; color: ${myVote === 'reject' ? 'white' : 'var(--red-apple)'}">👎 Inválido (${downvotes})</button>
+                </div>
+            `;
         }
         
         div.innerHTML = `
@@ -1171,34 +1159,31 @@ function renderEvaluationScreen() {
     animWrapper.appendChild(themeSection);
     DOM.evaluationList.appendChild(animWrapper);
 
+    // Eventos de Voto Sincronizados
+    document.querySelectorAll('.btn-vote-accept').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const pName = e.target.dataset.player;
+            const pTheme = e.target.dataset.theme;
+            await update(ref(db, `rooms/${currentRoomId}/gameState/votes/${pName}/${pTheme}`), {
+                [currentUser.name]: 'accept'
+            });
+        });
+    });
+
+    document.querySelectorAll('.btn-vote-reject').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const pName = e.target.dataset.player;
+            const pTheme = e.target.dataset.theme;
+            await update(ref(db, `rooms/${currentRoomId}/gameState/votes/${pName}/${pTheme}`), {
+                [currentUser.name]: 'reject'
+            });
+        });
+    });
+
     if (isHost) {
-        document.querySelectorAll('.btn-accept').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const pName = e.target.dataset.player;
-                const pTheme = e.target.dataset.theme;
-                state.roundAnswers[pName][pTheme].status = 'accepted';
-                e.target.style.background = 'var(--green-apple)';
-                e.target.style.color = 'white';
-                e.target.nextElementSibling.style.background = 'rgba(255, 59, 48, 0.1)';
-                e.target.nextElementSibling.style.color = 'var(--red-apple)';
-            });
-        });
-
-        document.querySelectorAll('.btn-reject').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const pName = e.target.dataset.player;
-                const pTheme = e.target.dataset.theme;
-                state.roundAnswers[pName][pTheme].status = 'rejected';
-                e.target.style.background = 'var(--red-apple)';
-                e.target.style.color = 'white';
-                e.target.previousElementSibling.style.background = 'rgba(52, 199, 89, 0.1)';
-                e.target.previousElementSibling.style.color = 'var(--blue-apple)';
-            });
-        });
-
         DOM.btnFinishEvaluation.style.display = 'block';
         if (state.currentEvaluationThemeIndex < state.currentThemes.length - 1) {
-            DOM.btnFinishEvaluation.textContent = "Próximo Tema";
+            DOM.btnFinishEvaluation.textContent = "Avançar e Encerrar Votos";
         } else {
             DOM.btnFinishEvaluation.textContent = "Finalizar Votação";
         }
@@ -1217,11 +1202,25 @@ function renderEvaluationScreen() {
 }
 
 DOM.btnFinishEvaluation.addEventListener('click', async () => {
+    // Apenas o Host pode disparar o envio oficial para o Firebase
+    if (currentRoomData.hostId !== currentUser.id) return;
+
     const currentTheme = state.currentThemes[state.currentEvaluationThemeIndex];
     
+    // O Host consolida as votações ao avançar a tela
     state.players.forEach(playerName => {
-        if (state.roundAnswers[playerName][currentTheme].status === 'pending') {
-            state.roundAnswers[playerName][currentTheme].status = 'rejected';
+        const ansData = state.roundAnswers[playerName][currentTheme];
+        if (ansData.status === 'voting') {
+            const votesForThis = state.votes?.[playerName]?.[currentTheme] || {};
+            const upvotes = Object.values(votesForThis).filter(v => v === 'accept').length;
+            const downvotes = Object.values(votesForThis).filter(v => v === 'reject').length;
+            
+            // Aprova se tiver no mínimo 1 voto positivo e ele for maior ou igual as rejeições!
+            if (upvotes >= downvotes && upvotes > 0) {
+                state.roundAnswers[playerName][currentTheme].status = 'accepted';
+            } else {
+                state.roundAnswers[playerName][currentTheme].status = 'rejected';
+            }
         }
     });
     
@@ -1232,12 +1231,37 @@ DOM.btnFinishEvaluation.addEventListener('click', async () => {
     await update(ref(db, `rooms/${currentRoomId}/gameState`), {
         evalIndex: nextIndex,
         isEvalFinished: isFinished,
-        answers: state.roundAnswers // Envia as correções oficiais feitas pelo Host
+        answers: state.roundAnswers, // Envia as correções oficiais feitas pelo Host
+        evalEndTime: isFinished ? null : Date.now() + 15000 // Inicia o tempo para o próximo tema (15s)
     });
 });
 
+function startEvalTimer(endTime) {
+    if (state.evalTimerInterval) clearInterval(state.evalTimerInterval);
+    
+    state.evalTimerInterval = setInterval(() => {
+        const timeLeft = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
+        const timerEl = document.getElementById('eval-countdown');
+        
+        if (timerEl) {
+            timerEl.textContent = `⏳ ${timeLeft}s`;
+            if (timeLeft <= 5) timerEl.style.animation = 'pulseFinal 1s infinite';
+        }
+
+        if (timeLeft <= 0) {
+            clearInterval(state.evalTimerInterval);
+            if (currentRoomData && currentRoomData.hostId === currentUser.id && state.isEvaluating && !state.isResults) {
+                DOM.btnFinishEvaluation.click(); // Avança automaticamente ao chegar no 0
+            }
+        }
+    }, 1000);
+}
+
 // 6. Pontuação e Placar
 function calculateScores() {
+    if (state.evalTimerInterval) clearInterval(state.evalTimerInterval);
+    state.currentEvalEndTime = null;
+
     // Agrupar respostas para verificar palavras iguais
     const answersByTheme = {}; // { theme: { normalizedWord: [playerName1, playerName2] } }
     
@@ -1282,10 +1306,24 @@ function renderScoreboard() {
     // Ordenar por pontuação
     const sortedPlayers = [...state.players].sort((a, b) => state.scores[b] - state.scores[a]);
 
-    sortedPlayers.forEach(p => {
+    sortedPlayers.forEach((p, index) => {
         const div = document.createElement('div');
         div.className = 'room-item';
-        div.innerHTML = `<strong>${p}</strong> <strong>${state.scores[p] || 0} pts</strong>`;
+        
+        let trophy = '';
+        if (index === 0) trophy = '🏆'; // Ouro
+        else if (index === 1) trophy = '🥈'; // Prata
+        else if (index === 2) trophy = '🥉'; // Bronze
+        
+        div.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 20px; width: 28px; text-align: center; font-weight: bold; color: var(--text-secondary);">
+                    ${trophy || `${index + 1}º`}
+                </span>
+                <strong style="font-size: 16px;">${p}</strong>
+            </div>
+            <strong style="font-size: 16px; color: var(--blue-apple);">${state.scores[p] || 0} pts</strong>
+        `;
         DOM.scoreboard.appendChild(div);
     });
 
