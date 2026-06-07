@@ -17,6 +17,15 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
 
+// Compensação de tempo do servidor (evita dessincronização de timers por fuso/relógio local)
+let serverTimeOffset = 0;
+onValue(ref(db, '.info/serverTimeOffset'), (snapshot) => {
+    serverTimeOffset = snapshot.val() || 0;
+});
+function getServerTime() {
+    return Date.now() + serverTimeOffset;
+}
+
 const DOM = {
     screens: document.querySelectorAll('.screen'),
     login: document.getElementById('screen-login'),
@@ -79,7 +88,6 @@ const DOM = {
     btnStop: document.getElementById('btn-stop'),
     
     evaluationList: document.getElementById('evaluation-list'),
-    btnFinishEvaluation: document.getElementById('btn-finish-evaluation'),
     btnMockHahaha: document.getElementById('btn-mock-hahaha'),
     btnMockSad: document.getElementById('btn-mock-sad'),
     
@@ -91,7 +99,8 @@ const DOM = {
 
 const ALL_THEMES = [
     "Comidas", "Estado", "País", "Objeto", 
-    "Nome de pessoa", "Verbo", "Tem na festa", "Tem na praia"
+    "Nome de pessoa", "Verbo", "Tem na festa", "Tem na praia",
+    "Profissão", "Animal", "Filme ou Série", "Cor", "Marca de Roupa"
 ];
 
 // Dicionário básico para validação local
@@ -103,7 +112,12 @@ const DICTIONARY = {
     "Nome de pessoa": ["alice", "ana", "andre", "arthur", "bruno", "bianca", "carlos", "camila", "daniel", "diego", "eduardo", "elena", "felipe", "fernanda", "gabriel", "giovana", "hugo", "helena", "igor", "isabela", "joao", "julia", "kleber", "karina", "lucas", "laura", "marcos", "maria", "nicolas", "natalia", "otavio", "olivia", "paulo", "pedro", "rafael", "roberta", "samuel", "sofia", "thiago", "tatiana", "ulisses", "ursula", "victor", "vitoria", "wagner", "xuxa", "yuri", "zeca"],
     "Verbo": ["amar", "andar", "beber", "brincar", "cantar", "correr", "dancar", "dormir", "escrever", "estudar", "falar", "fazer", "ganhar", "gostar", "haver", "ir", "jogar", "juntar", "ler", "limpar", "mandar", "morar", "nadar", "nascer", "olhar", "ouvir", "pagar", "pegar", "querer", "quebrar", "rir", "roubar", "sair", "sorrir", "ter", "tocar", "usar", "unir", "ver", "viver", "xingar", "zangar"],
     "Tem na festa": ["agua", "amigos", "bolo", "balao", "bebida", "cerveja", "copo", "convidado", "danca", "docinho", "enfeite", "fantasia", "garcom", "gelo", "musica", "mesa", "prato", "presente", "refrigerante", "salgadinho"],
-    "Tem na praia": ["agua", "areia", "barco", "biquini", "boia", "cadeira", "calor", "caranguejo", "concha", "coqueiro", "guarda-sol", "mar", "onda", "peixe", "picolé", "prancha", "protetor solar", "sal", "sol", "sunga", "toalha"]
+    "Tem na praia": ["agua", "areia", "barco", "biquini", "boia", "cadeira", "calor", "caranguejo", "concha", "coqueiro", "guarda-sol", "mar", "onda", "peixe", "picolé", "prancha", "protetor solar", "sal", "sol", "sunga", "toalha"],
+    "Profissão": ["advogado", "ator", "bombeiro", "cantor", "dentista", "engenheiro", "faxineiro", "garcom", "historiador", "instrutor", "jornalista"],
+    "Animal": ["abelha", "baleia", "cachorro", "dado", "elefante", "foca", "gato", "hiena", "iguana", "jacare", "leao", "macaco", "navio", "ovelha", "pato", "rato", "sapo", "tatu", "urso", "vaca", "zebra"],
+    "Filme ou Série": ["avatar", "batman", "chucky", "dexter", "elite", "friends", "glee", "house", "ironman", "jaws", "lost", "matrix", "narcos", "ozark", "prison break"],
+    "Cor": ["amarelo", "azul", "branco", "cinza", "dourado", "esmeralda", "fucsia", "gelo", "laranja", "marrom", "preto", "rosa", "roxo", "verde", "vermelho"],
+    "Marca de Roupa": ["adidas", "baw", "calvin klein", "dior", "fila", "gucci", "hollister", "lacoste", "nike", "oakley", "puma", "renner", "supreme", "vans", "zara"]
 };
 
 // Estado local e online do jogo
@@ -113,7 +127,7 @@ let currentRoomData = null;
 let roomListenerUnsubscribe = null;
 let chatListenerUnsubscribe = null;
 let reactionListenerUnsubscribe = null;
-let lastReactionTime = Date.now();
+let lastReactionTime = getServerTime();
 let idleRoomTimer = null;
 
 // Efeitos Sonoros (SFX)
@@ -349,7 +363,7 @@ DOM.btnCreateRoom.addEventListener('click', async () => {
             hostId: currentUser.id,
             hostName: currentUser.name,
             status: 'waiting',
-            waitingSince: Date.now(),
+            waitingSince: getServerTime(),
             players: {
                 [currentUser.id]: { ...currentUser, isReady: false }
             }
@@ -397,7 +411,7 @@ function enterRoomLobby() {
     onDisconnect(myPlayerRef).remove();
 
     if (reactionListenerUnsubscribe) reactionListenerUnsubscribe();
-    lastReactionTime = Date.now(); // Reseta o tempo da última reação ao entrar na sala
+    lastReactionTime = getServerTime(); // Reseta o tempo da última reação ao entrar na sala
     reactionListenerUnsubscribe = onValue(ref(db, `rooms/${currentRoomId}/reactions`), (snapshot) => {
         const data = snapshot.val();
         if (data) {
@@ -434,7 +448,7 @@ function enterRoomLobby() {
         
         // Se a sala estÃ¡ aguardando, inicia a contagem de 60 segundos
         if (currentRoomData.status === 'waiting' && currentRoomData.waitingSince) {
-            const timeLeft = 60000 - (Date.now() - currentRoomData.waitingSince);
+            const timeLeft = 60000 - (getServerTime() - currentRoomData.waitingSince);
             if (timeLeft <= 0) {
                 if (currentRoomData.hostId === currentUser.id) remove(ref(db, `rooms/${currentRoomId}`));
             } else {
@@ -465,7 +479,7 @@ function enterRoomLobby() {
             }
             // Host avança a fase se o tempo limite estourar
             if (currentRoomData.hostId === currentUser.id && currentRoomData.letterPhaseEndTime) {
-                const timeLeft = currentRoomData.letterPhaseEndTime - Date.now();
+                const timeLeft = currentRoomData.letterPhaseEndTime - getServerTime();
                 if (timeLeft <= 0) advanceToRoulette(currentRoomData);
                 else {
                     if(state.hostPhaseTimer) clearTimeout(state.hostPhaseTimer);
@@ -479,17 +493,17 @@ function enterRoomLobby() {
             }
             // Host avança para o jogo oficial após animação
             if (currentRoomData.hostId === currentUser.id && currentRoomData.rouletteEndTime) {
-                const timeLeft = currentRoomData.rouletteEndTime - Date.now();
+                const timeLeft = currentRoomData.rouletteEndTime - getServerTime();
                 if (timeLeft <= 0) {
                     update(ref(db, `rooms/${currentRoomId}`), { 
                         status: 'playing',
-                        'gameState/turnEndTime': Date.now() + 60000 // Inicia os 60s automaticamente!
+                        'gameState/turnEndTime': getServerTime() + 60000 // Inicia os 60s automaticamente!
                     });
                 } else {
                     if(state.hostPhaseTimer) clearTimeout(state.hostPhaseTimer);
                     state.hostPhaseTimer = setTimeout(() => update(ref(db, `rooms/${currentRoomId}`), { 
                         status: 'playing',
-                        'gameState/turnEndTime': Date.now() + 60000 
+                        'gameState/turnEndTime': getServerTime() + 60000 
                     }), timeLeft);
                 }
             }
@@ -573,7 +587,7 @@ function checkReadyStatus(data) {
             update(ref(db, `rooms/${currentRoomId}`), {
                 status: 'choosing_letter',
                 letterChoices: null,
-                letterPhaseEndTime: Date.now() + 13000
+            letterPhaseEndTime: getServerTime() + 13000
             });
         }
     } else {
@@ -602,7 +616,7 @@ function sendMessage() {
         senderId: currentUser.id,
         senderName: currentUser.name,
         text: text,
-        timestamp: Date.now()
+        timestamp: getServerTime()
     });
     
     DOM.chatInput.value = '';
@@ -633,7 +647,7 @@ function sendSystemMessage(text) {
         senderId: 'system',
         senderName: 'Sistema',
         text: text,
-        timestamp: Date.now()
+        timestamp: getServerTime()
     });
     setTimeout(() => {
         remove(newMessageRef).catch(() => {});
@@ -672,7 +686,7 @@ async function leaveRoom() {
 }
 
 function forceLeaveRoom(stayInLobby = false) {
-    if (reactionListenerUnsubscribe) reactionListenerUnsubscribe();
+    if (reactionListenerUnsubscribe) { reactionListenerUnsubscribe(); reactionListenerUnsubscribe = null; }
     if (state.evalTimerInterval) clearInterval(state.evalTimerInterval);
     state.isPlaying = false;
     state.isEvaluating = false;
@@ -687,6 +701,9 @@ function forceLeaveRoom(stayInLobby = false) {
     if(state.hostPhaseTimer) clearTimeout(state.hostPhaseTimer);
     
     if (!stayInLobby) {
+        if (roomListenerUnsubscribe) { roomListenerUnsubscribe(); roomListenerUnsubscribe = null; }
+        if (chatListenerUnsubscribe) { chatListenerUnsubscribe(); chatListenerUnsubscribe = null; }
+        if (idleRoomTimer) { clearTimeout(idleRoomTimer); idleRoomTimer = null; }
     currentRoomId = null;
     showScreen(DOM.rooms);
     loadRooms();
@@ -703,7 +720,7 @@ DOM.btnStartGame.addEventListener('click', async () => {
     await update(ref(db, `rooms/${currentRoomId}`), {
         status: 'choosing_letter',
         letterChoices: null,
-        letterPhaseEndTime: Date.now() + 13000 // 3s contagem + 10s para digitar
+        letterPhaseEndTime: getServerTime() + 13000 // 3s contagem + 10s para digitar
     });
 });
 
@@ -768,7 +785,7 @@ async function advanceToRoulette(roomData) {
     
     await update(ref(db, `rooms/${currentRoomId}`), {
         status: 'roulette',
-        rouletteEndTime: Date.now() + 5000,
+        rouletteEndTime: getServerTime() + 5000,
         gameState: {
             playersOrder: playerNames,
             turnEndTime: 0,
@@ -853,7 +870,7 @@ function syncOnlineGame(gameState) {
             state.isEvaluating = true;
             clearInterval(state.timerInterval);
             if (currentRoomData.hostId === currentUser.id && !gameState.evalEndTime) {
-                update(ref(db, `rooms/${currentRoomId}/gameState`), { evalEndTime: Date.now() + 17000 }); // 2s da animação + 15s de tempo real
+                update(ref(db, `rooms/${currentRoomId}/gameState`), { evalEndTime: getServerTime() + 17000 }); // 2s da animação + 15s de tempo real
             }
             processAnswersAndEvaluate();
         } else {
@@ -874,6 +891,25 @@ function syncOnlineGame(gameState) {
                 state.currentEvaluationThemeIndex = remoteEvalIndex;
                 state.roundAnswers = gameState.answers || state.roundAnswers;
                 renderEvaluationScreen();
+
+                // NOVIDADE: Verifica se todos os jogadores já votaram nas palavras abertas
+                if (currentRoomData.hostId === currentUser.id && !gameState.isEvalFinished) {
+                    const currentTheme = state.currentThemes[state.currentEvaluationThemeIndex];
+                    let allVoted = true;
+                    let hasVotingItems = false;
+                    
+                    state.players.forEach(playerName => {
+                        const ansData = state.roundAnswers[playerName][currentTheme];
+                        if (ansData.status === 'voting') {
+                            hasVotingItems = true;
+                            const totalVotes = Object.keys(state.votes?.[playerName]?.[currentTheme] || {}).length;
+                            if (totalVotes < state.players.length) allVoted = false;
+                        }
+                    });
+                    
+                    // Se todos votaram, a tela avança IMEDIATAMENTE (Ninguém espera)!
+                    if (hasVotingItems && allVoted) advanceEvaluationPhase();
+                }
             }
         }
         return;
@@ -890,7 +926,7 @@ function syncOnlineGame(gameState) {
     clearInterval(state.timerInterval);
     state.timerInterval = setInterval(() => {
         // Relógio baseado na hora universal para manter todos em sincronia
-        const timeLeft = Math.max(0, Math.ceil((gameState.turnEndTime - Date.now()) / 1000));
+        const timeLeft = Math.max(0, Math.ceil((gameState.turnEndTime - getServerTime()) / 1000));
         DOM.gameTimer.textContent = timeLeft;
         
         if (timeLeft <= 0) {
@@ -943,7 +979,7 @@ DOM.btnStop.addEventListener('click', () => {
 DOM.btnSkipTurn.addEventListener('click', async () => {
     if (currentRoomId && currentRoomData && currentRoomData.hostId === currentUser.id) {
         await update(ref(db, `rooms/${currentRoomId}/gameState`), {
-            turnEndTime: Date.now() // Zera o tempo instantaneamente para todos
+            turnEndTime: getServerTime() // Zera o tempo instantaneamente para todos
         });
     }
 });
@@ -967,7 +1003,7 @@ DOM.btnMockHahaha.addEventListener('click', () => {
     startReactionCooldown();
     const reactionRef = push(ref(db, `rooms/${currentRoomId}/reactions`), {
         type: 'hahaha',
-        timestamp: Date.now()
+        timestamp: getServerTime()
     });
     setTimeout(() => remove(reactionRef).catch(() => {}), 5000); // Limpa o banco rapidamente
 });
@@ -977,7 +1013,7 @@ DOM.btnMockSad.addEventListener('click', () => {
     startReactionCooldown();
     const reactionRef = push(ref(db, `rooms/${currentRoomId}/reactions`), {
         type: 'sad',
-        timestamp: Date.now()
+        timestamp: getServerTime()
     });
     setTimeout(() => remove(reactionRef).catch(() => {}), 5000);
 });
@@ -1020,8 +1056,8 @@ async function endOnlineTurn() {
     updates[`rooms/${currentRoomId}/gameState/answers/${currentUser.name}`] = myAnswers;
 
     // Se o tempo ainda não acabou e alguém mandou STOP, força o tempo ir a 0 e avisa aos outros computadores
-    if (currentRoomData && currentRoomData.gameState && currentRoomData.gameState.turnEndTime > Date.now()) {
-        updates[`rooms/${currentRoomId}/gameState/turnEndTime`] = Date.now();
+    if (currentRoomData && currentRoomData.gameState && currentRoomData.gameState.turnEndTime > getServerTime()) {
+        updates[`rooms/${currentRoomId}/gameState/turnEndTime`] = getServerTime();
     }
 
     await update(ref(db), updates);
@@ -1111,14 +1147,18 @@ function renderEvaluationScreen() {
     
     state.players.forEach(playerName => {
         const ansData = state.roundAnswers[playerName][theme];
+        const pData = Object.values(currentRoomData.players).find(p => p.name === playerName);
+        const avatarUrl = pData ? escapeHTML(pData.avatar) : '';
+
         const div = document.createElement('div');
         div.className = 'eval-item';
         div.style.flexDirection = 'column';
         div.style.alignItems = 'flex-start';
         div.style.background = '#f9f9f9';
-        div.style.padding = '10px';
+        div.style.padding = '16px';
         div.style.borderRadius = '8px';
-        div.style.border = '1px solid #e8e8ed';
+        div.style.border = '2px solid #e8e8ed';
+        div.style.width = '100%';
         
         let statusText = '';
         let actionsHTML = '';
@@ -1137,18 +1177,25 @@ function renderEvaluationScreen() {
 
             // Agora todo mundo pode votar na reposta dos outros (e na sua própria)
             actionsHTML = `
-                <div class="eval-actions" style="margin-top: 8px; width: 100%; display: flex; justify-content: space-around;">
-                    <button class="btn-text btn-vote-accept" data-player="${playerName}" data-theme="${theme}" style="background: ${myVote === 'accept' ? 'var(--green-apple)' : 'rgba(52, 199, 89, 0.1)'}; color: ${myVote === 'accept' ? 'white' : 'var(--green-apple)'}">👍 Válido (${upvotes})</button>
-                    <button class="btn-text btn-vote-reject" data-player="${playerName}" data-theme="${theme}" style="background: ${myVote === 'reject' ? 'var(--red-apple)' : 'rgba(255, 59, 48, 0.1)'}; color: ${myVote === 'reject' ? 'white' : 'var(--red-apple)'}">👎 Inválido (${downvotes})</button>
+                <div class="eval-actions" style="margin-top: 12px; width: 100%; display: flex; gap: 10px;">
+                    <button class="btn-vote-accept ${myVote === 'accept' ? 'voted-yes' : ''}" data-player="${playerName}" data-theme="${theme}">
+                        👍 <span style="pointer-events: none;">Válido</span> <span class="vote-count" style="pointer-events: none;">${upvotes}</span>
+                    </button>
+                    <button class="btn-vote-reject ${myVote === 'reject' ? 'voted-no' : ''}" data-player="${playerName}" data-theme="${theme}">
+                        👎 <span style="pointer-events: none;">Inválido</span> <span class="vote-count" style="pointer-events: none;">${downvotes}</span>
+                    </button>
                 </div>
             `;
         }
         
         div.innerHTML = `
-            <div style="width: 100%; text-align: left;">
-                <small style="color:var(--text-secondary); font-weight: bold;">${playerName}</small><br>
-                <span class="eval-word" style="font-size: 18px; display: block; margin: 4px 0;">${ansData.raw || '<em>(vazio)</em>'}</span>
-                ${statusText}
+            <div style="width: 100%; display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                <img src="${avatarUrl}" style="width: 48px; height: 48px; border-radius: 50%; background: #fff; border: 2px solid var(--blue-apple); box-shadow: 0 2px 8px rgba(0,113,227,0.2);">
+                <div style="flex: 1; text-align: left;">
+                    <small style="color:var(--text-secondary); font-weight: bold; font-size: 14px;">${playerName}</small><br>
+                    <span class="eval-word" style="font-size: 22px; font-weight: 800; display: block; margin: 2px 0;">${ansData.raw || '<em>(vazio)</em>'}</span>
+                    ${statusText}
+                </div>
             </div>
             ${actionsHTML}
         `;
@@ -1180,30 +1227,14 @@ function renderEvaluationScreen() {
         });
     });
 
-    if (isHost) {
-        DOM.btnFinishEvaluation.style.display = 'block';
-        if (state.currentEvaluationThemeIndex < state.currentThemes.length - 1) {
-            DOM.btnFinishEvaluation.textContent = "Avançar e Encerrar Votos";
-        } else {
-            DOM.btnFinishEvaluation.textContent = "Finalizar Votação";
-        }
-    } else {
-        DOM.btnFinishEvaluation.style.display = 'none';
-        
-        const waitMsg = document.createElement('div');
-        waitMsg.style.textAlign = 'center';
-        waitMsg.style.marginTop = '15px';
-        waitMsg.style.color = 'var(--text-secondary)';
-        waitMsg.innerHTML = '<strong>Aguarde o Host finalizar a votação...</strong>';
-        DOM.evaluationList.appendChild(waitMsg);
-    }
-
     showScreen(DOM.evaluation);
 }
 
-DOM.btnFinishEvaluation.addEventListener('click', async () => {
+let isAdvancing = false;
+async function advanceEvaluationPhase() {
     // Apenas o Host pode disparar o envio oficial para o Firebase
-    if (currentRoomData.hostId !== currentUser.id) return;
+    if (currentRoomData.hostId !== currentUser.id || isAdvancing) return;
+    isAdvancing = true;
 
     const currentTheme = state.currentThemes[state.currentEvaluationThemeIndex];
     
@@ -1232,15 +1263,17 @@ DOM.btnFinishEvaluation.addEventListener('click', async () => {
         evalIndex: nextIndex,
         isEvalFinished: isFinished,
         answers: state.roundAnswers, // Envia as correções oficiais feitas pelo Host
-        evalEndTime: isFinished ? null : Date.now() + 15000 // Inicia o tempo para o próximo tema (15s)
+        evalEndTime: isFinished ? null : getServerTime() + 15000 // Inicia o tempo para o próximo tema (15s)
     });
-});
+
+    setTimeout(() => isAdvancing = false, 1500); // Impede envios múltiplos duplicados (Debounce)
+}
 
 function startEvalTimer(endTime) {
     if (state.evalTimerInterval) clearInterval(state.evalTimerInterval);
     
     state.evalTimerInterval = setInterval(() => {
-        const timeLeft = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
+        const timeLeft = Math.max(0, Math.ceil((endTime - getServerTime()) / 1000));
         const timerEl = document.getElementById('eval-countdown');
         
         if (timerEl) {
@@ -1251,7 +1284,7 @@ function startEvalTimer(endTime) {
         if (timeLeft <= 0) {
             clearInterval(state.evalTimerInterval);
             if (currentRoomData && currentRoomData.hostId === currentUser.id && state.isEvaluating && !state.isResults) {
-                DOM.btnFinishEvaluation.click(); // Avança automaticamente ao chegar no 0
+                advanceEvaluationPhase(); // Avança automaticamente ao chegar no 0
             }
         }
     }, 1000);
@@ -1341,7 +1374,7 @@ DOM.btnNextRound.addEventListener('click', async () => {
     // Retorna a sala para o status "waiting" e limpa o gameState
     const updates = {
         status: 'waiting',
-        waitingSince: Date.now(),
+        waitingSince: getServerTime(),
         gameState: null,
         letterChoices: null
     };
