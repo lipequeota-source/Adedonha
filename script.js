@@ -48,8 +48,10 @@ const DOM = {
     letterInputContainer: document.getElementById('letter-input-container'),
     inputChosenLetter: document.getElementById('input-chosen-letter'),
     btnSubmitLetter: document.getElementById('btn-submit-letter'),
+    btnRandomLetter: document.getElementById('btn-random-letter'),
     letterRouletteContainer: document.getElementById('letter-roulette-container'),
     rouletteDisplay: document.getElementById('roulette-display'),
+    letterSummary: document.getElementById('letter-summary'),
     
     // Lobby Sala
     roomTitle: document.getElementById('room-title-display'),
@@ -446,10 +448,17 @@ function enterRoomLobby() {
             // Host avança para o jogo oficial após animação
             if (currentRoomData.hostId === currentUser.id && currentRoomData.rouletteEndTime) {
                 const timeLeft = currentRoomData.rouletteEndTime - Date.now();
-                if (timeLeft <= 0) update(ref(db, `rooms/${currentRoomId}/status`), 'playing');
-                else {
+                if (timeLeft <= 0) {
+                    update(ref(db, `rooms/${currentRoomId}`), { 
+                        status: 'playing',
+                        'gameState/turnEndTime': Date.now() + 60000 // Inicia os 60s automaticamente!
+                    });
+                } else {
                     if(state.hostPhaseTimer) clearTimeout(state.hostPhaseTimer);
-                    state.hostPhaseTimer = setTimeout(() => update(ref(db, `rooms/${currentRoomId}/status`), 'playing'), timeLeft);
+                    state.hostPhaseTimer = setTimeout(() => update(ref(db, `rooms/${currentRoomId}`), { 
+                        status: 'playing',
+                        'gameState/turnEndTime': Date.now() + 60000 
+                    }), timeLeft);
                 }
             }
         } else if (currentRoomData.status === 'playing' && !state.isPlaying) {
@@ -522,7 +531,8 @@ function renderRoomPlayers(data) {
 
 function checkReadyStatus(data) {
     const players = Object.values(data.players || {});
-    const allReady = players.length > 1 && players.every(p => p.isReady);
+    // Alterado para permitir iniciar a partida com 1 jogador (ideal para testes)
+    const allReady = players.length > 0 && players.every(p => p.isReady);
     
     // Controles do Host
     if (data.hostId === currentUser.id) {
@@ -659,6 +669,7 @@ function startLetterChoicePhase() {
     DOM.inputChosenLetter.value = '';
     DOM.btnSubmitLetter.disabled = false;
     DOM.btnSubmitLetter.textContent = "Enviar Letra";
+    DOM.btnRandomLetter.disabled = false;
     
     let count = 3;
     DOM.letterCountdown.textContent = count;
@@ -681,13 +692,20 @@ DOM.btnSubmitLetter.addEventListener('click', async () => {
     if (!letter || !/^[A-Z]$/.test(letter)) return alert("Digite uma letra válida do alfabeto!");
     
     DOM.btnSubmitLetter.disabled = true;
+    DOM.btnRandomLetter.disabled = true;
     DOM.btnSubmitLetter.textContent = "Enviado!";
     
-    await update(ref(db, `rooms/${currentRoomId}/letterChoices/${currentUser.id}`), letter);
+    // Valores primitivos (como texto/letras) precisam do comando 'set' e não 'update'
+    await set(ref(db, `rooms/${currentRoomId}/letterChoices/${currentUser.id}`), letter);
 });
 
 DOM.inputChosenLetter.addEventListener('input', (e) => e.target.value = e.target.value.replace(/[^a-zA-Z]/g, '').toUpperCase());
 DOM.inputChosenLetter.addEventListener('keypress', (e) => { if (e.key === 'Enter') DOM.btnSubmitLetter.click(); });
+
+DOM.btnRandomLetter.addEventListener('click', () => {
+    DOM.inputChosenLetter.value = getRandomLetter();
+    DOM.btnSubmitLetter.click();
+});
 
 async function advanceToRoulette(roomData) {
     if (!currentRoomId || roomData.status !== 'choosing_letter') return;
@@ -725,6 +743,16 @@ function startRoulettePhase(gameState) {
     const submitted = gameState.submittedLetters || [gameState.roundLetter];
     const finalLetter = gameState.roundLetter;
     
+    DOM.letterSummary.innerHTML = '';
+    const letterCounts = {};
+    submitted.forEach(l => letterCounts[l] = (letterCounts[l] || 0) + 1);
+    Object.entries(letterCounts).forEach(([letra, qtd]) => {
+        const span = document.createElement('span');
+        span.className = 'letter-summary-item';
+        span.textContent = `${letra}: ${qtd}x`;
+        DOM.letterSummary.appendChild(span);
+    });
+
     DOM.rouletteDisplay.innerHTML = '';
     const letterElements = [];
     const roulettePool = [...submitted];
@@ -832,6 +860,26 @@ function startTurnUI(playerName, isMyTurn) {
             </div>
         `;
         DOM.themesContainer.appendChild(div);
+        
+        if (isMyTurn) {
+            const inputEl = div.querySelector('.theme-answer');
+            inputEl.addEventListener('input', (e) => {
+                const val = normalizeString(e.target.value);
+                const expectedInitial = normalizeString(state.roundLetter);
+                
+                if (val && val.startsWith(expectedInitial)) {
+                    const dict = DICTIONARY[theme] || [];
+                    const isCorrect = dict.some(word => normalizeString(word) === val);
+                    if (isCorrect) {
+                        e.target.classList.add('input-success');
+                    } else {
+                        e.target.classList.remove('input-success');
+                    }
+                } else {
+                    e.target.classList.remove('input-success');
+                }
+            });
+        }
     });
 
     DOM.btnStop.style.display = isMyTurn ? 'block' : 'none';

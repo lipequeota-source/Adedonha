@@ -72,6 +72,7 @@ body {
     margin-bottom: 20px;
 }
 .apple-input:focus { border-color: var(--blue-apple); box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.2); }
+.apple-input.input-success { border-color: var(--green-apple); box-shadow: 0 0 0 3px rgba(52, 199, 89, 0.2); background: rgba(52, 199, 89, 0.05); transition: all 0.3s; }
 
 button {
     font-family: inherit; cursor: pointer; border: none; font-weight: 600; font-size: 17px;
@@ -207,3 +208,6 @@ button {
     50% { transform: scale(1.1); }
     100% { transform: scale(1); }
 }
+
+.letter-summary { margin-top: 20px; font-size: 14px; color: var(--text-secondary); display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.letter-summary-item { background: #e8e8ed; padding: 4px 10px; border-radius: 12px; font-weight: 600; }
