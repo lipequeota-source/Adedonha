@@ -106,6 +106,26 @@
             </div>
         </section>
 
+        <!-- Tela de Escolha e Sorteio de Letra -->
+        <section id="screen-letter-selection" class="screen hidden apple-card">
+            <div id="letter-countdown-container" class="active">
+                <h2 class="title">O jogo vai começar em...</h2>
+                <div id="letter-countdown" class="highlight-letter" style="font-size: 80px; margin: 20px 0;">3</div>
+            </div>
+            
+            <div id="letter-input-container" class="hidden">
+                <h2 class="title">Escolha uma Letra</h2>
+                <p class="subtitle">Qual letra você gostaria nesta rodada?</p>
+                <input type="text" id="input-chosen-letter" class="apple-input" maxlength="1" style="text-align: center; font-size: 32px; font-weight: bold; text-transform: uppercase;">
+                <button id="btn-submit-letter" class="btn-primary">Enviar Letra</button>
+            </div>
+            
+            <div id="letter-roulette-container" class="hidden">
+                <h2 class="title">Sorteando Letra...</h2>
+                <div id="roulette-display" class="roulette-display"></div>
+            </div>
+        </section>
+
         <!-- Tela de Transição de Turno -->
         <section id="screen-turn-transition" class="screen hidden apple-card">
             <h2>Aguarde sua vez, <span id="current-player-display"></span></h2>

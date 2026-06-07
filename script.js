@@ -41,6 +41,16 @@ const DOM = {
     roomsList: document.getElementById('rooms-list'),
     btnCreateRoom: document.getElementById('btn-create-room'),
     
+    // Fase de Letra
+    letterSelection: document.getElementById('screen-letter-selection'),
+    letterCountdownContainer: document.getElementById('letter-countdown-container'),
+    letterCountdown: document.getElementById('letter-countdown'),
+    letterInputContainer: document.getElementById('letter-input-container'),
+    inputChosenLetter: document.getElementById('input-chosen-letter'),
+    btnSubmitLetter: document.getElementById('btn-submit-letter'),
+    letterRouletteContainer: document.getElementById('letter-roulette-container'),
+    rouletteDisplay: document.getElementById('roulette-display'),
+    
     // Lobby Sala
     roomTitle: document.getElementById('room-title-display'),
     btnCopyLink: document.getElementById('btn-copy-link'),
@@ -97,6 +107,7 @@ let currentRoomId = null;
 let currentRoomData = null;
 let roomListenerUnsubscribe = null;
 let chatListenerUnsubscribe = null;
+let idleRoomTimer = null;
 
 // Efeitos Sonoros (SFX)
 const SFX = {
@@ -118,6 +129,9 @@ document.addEventListener('click', (e) => {
 let state = {
     isPlaying: false,
     isEvaluating: false,
+    isChoosingLetter: false,
+    isRoulette: false,
+    hostPhaseTimer: null, // Timer exclusivo do Host para controlar fases automáticas
     roundLetter: '',
     currentThemes: [],
     roundAnswers: {}, // { playerName: { theme: answer } }
@@ -286,9 +300,10 @@ function loadRooms() {
             if (roomInfo.status !== 'waiting') return; // Mostrar apenas salas aguardando
             
             const playersCount = roomInfo.players ? Object.keys(roomInfo.players).length : 0;
+            const isIdle = roomInfo.status === 'waiting' && roomInfo.waitingSince && (Date.now() - roomInfo.waitingSince > 60000);
             
-            // Deleta salas fantasmas (vazias) automaticamente
-            if (playersCount === 0) {
+            // Deleta salas fantasmas (vazias) ou inativas automaticamente
+            if (playersCount === 0 || isIdle) {
                 remove(ref(db, `rooms/${roomId}`));
                 return;
             }
@@ -320,6 +335,7 @@ DOM.btnCreateRoom.addEventListener('click', async () => {
             hostId: currentUser.id,
             hostName: currentUser.name,
             status: 'waiting',
+            waitingSince: Date.now(),
             players: {
                 [currentUser.id]: { ...currentUser, isReady: false }
             }
@@ -373,9 +389,29 @@ function enterRoomLobby() {
         if (!currentRoomData) {
             // Sala foi deletada
             leaveRoom();
-            return alert("A sala foi fechada.");
+            return alert("A sala foi fechada por inatividade ou pelo Host.");
         }
         
+        // Limpa o timer antigo se houver
+        if (idleRoomTimer) {
+            clearTimeout(idleRoomTimer);
+            idleRoomTimer = null;
+        }
+        
+        // Se a sala está aguardando, inicia a contagem de 60 segundos
+        if (currentRoomData.status === 'waiting' && currentRoomData.waitingSince) {
+            const timeLeft = 60000 - (Date.now() - currentRoomData.waitingSince);
+            if (timeLeft <= 0) {
+                if (currentRoomData.hostId === currentUser.id) remove(ref(db, `rooms/${currentRoomId}`));
+            } else {
+                idleRoomTimer = setTimeout(() => {
+                    if (currentRoomId && currentRoomData && currentRoomData.hostId === currentUser.id && currentRoomData.status === 'waiting') {
+                        remove(ref(db, `rooms/${currentRoomId}`));
+                    }
+                }, timeLeft);
+            }
+        }
+
         // Verifica se fui expulso pelo Host (Estava na sala, mas meu ID não está mais na lista)
         if (currentRoomData.hostId !== currentUser.id && (!currentRoomData.players || !currentRoomData.players[currentUser.id])) {
             if (roomListenerUnsubscribe) roomListenerUnsubscribe();
@@ -388,19 +424,42 @@ function enterRoomLobby() {
         checkReadyStatus(currentRoomData);
         
         // Sincronização de Estado do Jogo
-        if (currentRoomData.status === 'playing' && !state.isPlaying) {
+        if (currentRoomData.status === 'choosing_letter') {
+            if (!state.isChoosingLetter) {
+                state.isChoosingLetter = true;
+                startLetterChoicePhase();
+            }
+            // Host avança a fase se o tempo limite estourar
+            if (currentRoomData.hostId === currentUser.id && currentRoomData.letterPhaseEndTime) {
+                const timeLeft = currentRoomData.letterPhaseEndTime - Date.now();
+                if (timeLeft <= 0) advanceToRoulette(currentRoomData);
+                else {
+                    if(state.hostPhaseTimer) clearTimeout(state.hostPhaseTimer);
+                    state.hostPhaseTimer = setTimeout(() => advanceToRoulette(currentRoomData), timeLeft);
+                }
+            }
+        } else if (currentRoomData.status === 'roulette') {
+            if (!state.isRoulette) {
+                state.isRoulette = true;
+                startRoulettePhase(currentRoomData.gameState);
+            }
+            // Host avança para o jogo oficial após animação
+            if (currentRoomData.hostId === currentUser.id && currentRoomData.rouletteEndTime) {
+                const timeLeft = currentRoomData.rouletteEndTime - Date.now();
+                if (timeLeft <= 0) update(ref(db, `rooms/${currentRoomId}/status`), 'playing');
+                else {
+                    if(state.hostPhaseTimer) clearTimeout(state.hostPhaseTimer);
+                    state.hostPhaseTimer = setTimeout(() => update(ref(db, `rooms/${currentRoomId}/status`), 'playing'), timeLeft);
+                }
+            }
+        } else if (currentRoomData.status === 'playing' && !state.isPlaying) {
             state.isPlaying = true;
-            state.isEvaluating = false;
             prepareOnlineGame(currentRoomData.gameState);
         } else if (currentRoomData.status === 'playing' && state.isPlaying) {
             syncOnlineGame(currentRoomData.gameState);
         } else if (currentRoomData.status === 'waiting' && state.isPlaying) {
-            // O host decidiu jogar novamente, voltando todos pro Lobby da sala
-            state.isPlaying = false;
-            state.isEvaluating = false;
-            currentUser.isReady = false;
-            DOM.btnReady.textContent = "Estou Pronto";
-            showScreen(DOM.roomLobby);
+            // Limpa o jogo para uma nova rodada
+            forceLeaveRoom(true); 
         }
     });
 
@@ -536,6 +595,7 @@ function sendSystemMessage(text) {
 async function leaveRoom() {
     if (roomListenerUnsubscribe) roomListenerUnsubscribe();
     if (chatListenerUnsubscribe) chatListenerUnsubscribe();
+    if (idleRoomTimer) clearTimeout(idleRoomTimer);
     
     if (currentRoomData && currentRoomId) {
         const playersCount = currentRoomData.players ? Object.keys(currentRoomData.players).length : 0;
@@ -562,32 +622,140 @@ async function leaveRoom() {
     forceLeaveRoom();
 }
 
-function forceLeaveRoom() {
+function forceLeaveRoom(stayInLobby = false) {
     state.isPlaying = false;
     state.isEvaluating = false;
+    state.isChoosingLetter = false;
+    state.isRoulette = false;
+    if(state.hostPhaseTimer) clearTimeout(state.hostPhaseTimer);
+    
+    if (!stayInLobby) {
     currentRoomId = null;
     showScreen(DOM.rooms);
     loadRooms();
+    } else {
+        currentUser.isReady = false;
+        DOM.btnReady.textContent = "Estou Pronto";
+        DOM.btnReady.style.background = "";
+        DOM.btnReady.style.color = "";
+        if (!DOM.roomLobby.classList.contains('active')) showScreen(DOM.roomLobby);
+    }
 }
 
 DOM.btnStartGame.addEventListener('click', async () => {
-    const playersList = Object.values(currentRoomData.players || {});
+    await update(ref(db, `rooms/${currentRoomId}`), {
+        status: 'choosing_letter',
+        letterChoices: null,
+        letterPhaseEndTime: Date.now() + 13000 // 3s contagem + 10s para digitar
+    });
+});
+
+// 4. Fases de Escolha de Letra
+function startLetterChoicePhase() {
+    showScreen(DOM.letterSelection);
+    DOM.letterCountdownContainer.classList.remove('hidden');
+    DOM.letterInputContainer.classList.add('hidden');
+    DOM.letterRouletteContainer.classList.add('hidden');
+    DOM.inputChosenLetter.value = '';
+    DOM.btnSubmitLetter.disabled = false;
+    DOM.btnSubmitLetter.textContent = "Enviar Letra";
+    
+    let count = 3;
+    DOM.letterCountdown.textContent = count;
+    
+    const countInterval = setInterval(() => {
+        count--;
+        if (count > 0) {
+            DOM.letterCountdown.textContent = count;
+        } else {
+            clearInterval(countInterval);
+            DOM.letterCountdownContainer.classList.add('hidden');
+            DOM.letterInputContainer.classList.remove('hidden');
+            DOM.inputChosenLetter.focus();
+        }
+    }, 1000);
+}
+
+DOM.btnSubmitLetter.addEventListener('click', async () => {
+    const letter = DOM.inputChosenLetter.value.trim().toUpperCase();
+    if (!letter || !/^[A-Z]$/.test(letter)) return alert("Digite uma letra válida do alfabeto!");
+    
+    DOM.btnSubmitLetter.disabled = true;
+    DOM.btnSubmitLetter.textContent = "Enviado!";
+    
+    await update(ref(db, `rooms/${currentRoomId}/letterChoices/${currentUser.id}`), letter);
+});
+
+DOM.inputChosenLetter.addEventListener('input', (e) => e.target.value = e.target.value.replace(/[^a-zA-Z]/g, '').toUpperCase());
+DOM.inputChosenLetter.addEventListener('keypress', (e) => { if (e.key === 'Enter') DOM.btnSubmitLetter.click(); });
+
+async function advanceToRoulette(roomData) {
+    if (!currentRoomId || roomData.status !== 'choosing_letter') return;
+    
+    const choices = roomData.letterChoices || {};
+    let submittedLetters = Object.values(choices).map(c => c.toUpperCase());
+    
+    if (submittedLetters.length === 0) submittedLetters = [getRandomLetter()];
+    
+    const pickedLetter = submittedLetters[Math.floor(Math.random() * submittedLetters.length)];
+    const playersList = Object.values(roomData.players || {});
     const playerNames = playersList.map(p => p.name);
     
     await update(ref(db, `rooms/${currentRoomId}`), {
-        status: 'playing',
+        status: 'roulette',
+        rouletteEndTime: Date.now() + 5000,
         gameState: {
             playersOrder: playerNames,
             currentTurnIndex: 0,
             turnEndTime: 0,
-            roundLetter: getRandomLetter(),
+            roundLetter: pickedLetter,
+            submittedLetters: submittedLetters,
             themes: shuffleArray([...ALL_THEMES]).slice(0, 4),
             answers: {}
         }
     });
-});
+}
 
-// 4. Estrutura do Jogo Online Sincronizado
+function startRoulettePhase(gameState) {
+    showScreen(DOM.letterSelection);
+    DOM.letterCountdownContainer.classList.add('hidden');
+    DOM.letterInputContainer.classList.add('hidden');
+    DOM.letterRouletteContainer.classList.remove('hidden');
+    
+    const submitted = gameState.submittedLetters || [gameState.roundLetter];
+    const finalLetter = gameState.roundLetter;
+    
+    DOM.rouletteDisplay.innerHTML = '';
+    const letterElements = [];
+    const roulettePool = [...submitted];
+    while(roulettePool.length < 8) { roulettePool.push(getRandomLetter()); }
+    shuffleArray(roulettePool);
+    
+    roulettePool.forEach(l => {
+        const span = document.createElement('span');
+        span.className = 'roulette-item';
+        span.textContent = l;
+        DOM.rouletteDisplay.appendChild(span);
+        letterElements.push(span);
+    });
+    
+    let flashes = 20, currentFlash = 0;
+    const rouletteInterval = setInterval(() => {
+        letterElements.forEach(el => el.classList.remove('highlighted'));
+        letterElements[Math.floor(Math.random() * letterElements.length)].classList.add('highlighted');
+        
+        currentFlash++;
+        if (currentFlash >= flashes) {
+            clearInterval(rouletteInterval);
+            DOM.rouletteDisplay.innerHTML = `<span class="roulette-item final-winner pulse-animation">${finalLetter}</span>`;
+            SFX.perfect.currentTime = 0; SFX.perfect.play().catch(()=>{});
+        } else {
+            SFX.click.currentTime = 0; SFX.click.play().catch(()=>{});
+        }
+    }, 150);
+}
+
+// 5. Estrutura do Jogo Online Sincronizado
 function prepareOnlineGame(gameState) {
     state.players = gameState.playersOrder || [];
     state.roundLetter = gameState.roundLetter;
@@ -886,7 +1054,9 @@ DOM.btnNextRound.addEventListener('click', async () => {
     // Retorna a sala para o status "waiting" e limpa o gameState
     const updates = {
         status: 'waiting',
-        gameState: null
+        waitingSince: Date.now(),
+        gameState: null,
+        letterChoices: null
     };
     
     // Remove o status de "pronto" de todos para forçá-los a dar pronto novamente
