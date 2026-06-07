@@ -1,4 +1,4 @@
-// --- CONFIGURAÃ‡ÃƒO DO FIREBASE ---
+// --- CONFIGURAÇÃO DO FIREBASE ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getDatabase, ref, set, push, onValue, update, remove, get, onDisconnect } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
@@ -75,10 +75,13 @@ const DOM = {
     gamePlayer: document.getElementById('game-player'),
     gameTimer: document.getElementById('game-timer'),
     themesContainer: document.getElementById('themes-container'),
+    btnSkipTurn: document.getElementById('btn-skip-turn'),
     btnStop: document.getElementById('btn-stop'),
     
     evaluationList: document.getElementById('evaluation-list'),
     btnFinishEvaluation: document.getElementById('btn-finish-evaluation'),
+    btnMockHahaha: document.getElementById('btn-mock-hahaha'),
+    btnMockSad: document.getElementById('btn-mock-sad'),
     
     scoreboard: document.getElementById('scoreboard'),
     btnNextRound: document.getElementById('btn-next-round'),
@@ -87,20 +90,20 @@ const DOM = {
 };
 
 const ALL_THEMES = [
-    "Comidas", "Estado", "PaÃ­s", "Objeto", 
+    "Comidas", "Estado", "País", "Objeto", 
     "Nome de pessoa", "Verbo", "Tem na festa", "Tem na praia"
 ];
 
-// DicionÃ¡rio bÃ¡sico para validaÃ§Ã£o local
+// Dicionário básico para validação local
 const DICTIONARY = {
     "Comidas": ["abacate", "abacaxi", "arroz", "batata", "bolo", "carne", "cebola", "chocolate", "doce", "empada", "feijao", "frango", "goiaba", "hamburguer", "iogurte", "jaca", "kiwi", "laranja", "limao", "macarrao", "maca", "morango", "nabo", "ovo", "pao", "peixe", "queijo", "repolho", "salsicha", "tomate", "uva"],
     "Estado": ["acre", "alagoas", "amapa", "amazonas", "bahia", "ceara", "espirito santo", "goias", "maranhao", "mato grosso", "mato grosso do sul", "minas gerais", "para", "paraiba", "parana", "pernambuco", "piaui", "rio de janeiro", "rio grande do norte", "rio grande do sul", "rondonia", "roraima", "santa catarina", "sao paulo", "sergipe", "tocantins", "alaska", "california", "florida", "texas"],
-    "PaÃ­s": ["afeganistao", "alemanha", "angola", "argentina", "australia", "bahamas", "belgica", "bolivia", "brasil", "bulgaria", "camaroes", "canada", "chile", "china", "colombia", "coreia", "croacia", "cuba", "dinamarca", "egito", "equador", "espanha", "estados unidos", "franca", "grecia", "holanda", "hungria", "india", "indonesia", "inglaterra", "irao", "iraque", "irlanda", "israel", "italia", "jamaica", "japao", "libano", "madagascar", "malasia", "marrocos", "mexico", "mocambique", "noruega", "nova zelandia", "paraguai", "peru", "polonia", "portugal", "quenia", "reino unido", "romenia", "russia", "servia", "siria", "suecia", "suica", "tailandia", "taiwan", "turquia", "ucrania", "uruguai", "venezuela", "vietna", "zimbabue"],
+    "País": ["afeganistao", "alemanha", "angola", "argentina", "australia", "bahamas", "belgica", "bolivia", "brasil", "bulgaria", "camaroes", "canada", "chile", "china", "colombia", "coreia", "croacia", "cuba", "dinamarca", "egito", "equador", "espanha", "estados unidos", "franca", "grecia", "holanda", "hungria", "india", "indonesia", "inglaterra", "irao", "iraque", "irlanda", "israel", "italia", "jamaica", "japao", "libano", "madagascar", "malasia", "marrocos", "mexico", "mocambique", "noruega", "nova zelandia", "paraguai", "peru", "polonia", "portugal", "quenia", "reino unido", "romenia", "russia", "servia", "siria", "suecia", "suica", "tailandia", "taiwan", "turquia", "ucrania", "uruguai", "venezuela", "vietna", "zimbabue"],
     "Objeto": ["anel", "armario", "balde", "bola", "cadeira", "cama", "caneta", "carro", "celular", "chave", "copo", "dado", "espelho", "faca", "faca", "garfo", "guitarra", "helicoptero", "ima", "janela", "livro", "lapis", "mesa", "navio", "oculos", "panela", "quadro", "relogio", "sapato", "tampa", "tesoura", "urso", "vaso", "xicara", "ziper"],
     "Nome de pessoa": ["alice", "ana", "andre", "arthur", "bruno", "bianca", "carlos", "camila", "daniel", "diego", "eduardo", "elena", "felipe", "fernanda", "gabriel", "giovana", "hugo", "helena", "igor", "isabela", "joao", "julia", "kleber", "karina", "lucas", "laura", "marcos", "maria", "nicolas", "natalia", "otavio", "olivia", "paulo", "pedro", "rafael", "roberta", "samuel", "sofia", "thiago", "tatiana", "ulisses", "ursula", "victor", "vitoria", "wagner", "xuxa", "yuri", "zeca"],
     "Verbo": ["amar", "andar", "beber", "brincar", "cantar", "correr", "dancar", "dormir", "escrever", "estudar", "falar", "fazer", "ganhar", "gostar", "haver", "ir", "jogar", "juntar", "ler", "limpar", "mandar", "morar", "nadar", "nascer", "olhar", "ouvir", "pagar", "pegar", "querer", "quebrar", "rir", "roubar", "sair", "sorrir", "ter", "tocar", "usar", "unir", "ver", "viver", "xingar", "zangar"],
     "Tem na festa": ["agua", "amigos", "bolo", "balao", "bebida", "cerveja", "copo", "convidado", "danca", "docinho", "enfeite", "fantasia", "garcom", "gelo", "musica", "mesa", "prato", "presente", "refrigerante", "salgadinho"],
-    "Tem na praia": ["agua", "areia", "barco", "biquini", "boia", "cadeira", "calor", "caranguejo", "concha", "coqueiro", "guarda-sol", "mar", "onda", "peixe", "picolÃ©", "prancha", "protetor solar", "sal", "sol", "sunga", "toalha"]
+    "Tem na praia": ["agua", "areia", "barco", "biquini", "boia", "cadeira", "calor", "caranguejo", "concha", "coqueiro", "guarda-sol", "mar", "onda", "peixe", "picolé", "prancha", "protetor solar", "sal", "sol", "sunga", "toalha"]
 };
 
 // Estado local e online do jogo
@@ -109,6 +112,8 @@ let currentRoomId = null;
 let currentRoomData = null;
 let roomListenerUnsubscribe = null;
 let chatListenerUnsubscribe = null;
+let reactionListenerUnsubscribe = null;
+let lastReactionTime = Date.now();
 let idleRoomTimer = null;
 
 // Efeitos Sonoros (SFX)
@@ -133,17 +138,19 @@ let state = {
     isEvaluating: false,
     isChoosingLetter: false,
     isRoulette: false,
-    hostPhaseTimer: null, // Timer exclusivo do Host para controlar fases automÃ¡ticas
+    hostPhaseTimer: null, // Timer exclusivo do Host para controlar fases automáticas
     roundLetter: '',
     currentThemes: [],
     roundAnswers: {}, // { playerName: { theme: answer } }
     scores: {}, // { playerName: totalScore }
     timerInterval: null,
     timeLeft: 60,
-    wordsToEvaluate: []
+    wordsToEvaluate: [],
+    currentEvaluationThemeIndex: 0,
+    isResults: false
 };
 
-// --- FUNÃ‡Ã•ES UTILITÃRIAS ---
+// --- FUNÇÕES UTILITÁRIAS ---
 function escapeHTML(str) {
     if (!str) return '';
     return String(str).replace(/[&<>'"]/g, tag => ({
@@ -179,13 +186,13 @@ function shuffleArray(array) {
     return array;
 }
 
-// --- ANIMAÃ‡Ã•ES JUST DANCE ---
+// --- ANIMAÇÕES JUST DANCE ---
 function showJustDanceFeedback(type) {
     const el = document.createElement('div');
     el.className = `feedback-popup feedback-${type}`;
     el.textContent = type === 'perfect' ? 'PERFEITO!' : 'ERROU!';
     
-    // Adiciona uma pequena variaÃ§Ã£o de posiÃ§Ã£o
+    // Adiciona uma pequena variação de posição
     const top = 30 + Math.random() * 40;
     const left = 20 + Math.random() * 60;
     el.style.top = `${top}%`;
@@ -243,7 +250,7 @@ DOM.avatarSkin.addEventListener('change', generateAvatar);
 DOM.avatarMouth.addEventListener('change', generateAvatar);
 DOM.avatarClothing.addEventListener('change', generateAvatar);
 
-// Permite apertar Enter no campo de nome para entrar no jogo (Ãºtil para celulares)
+// Permite apertar Enter no campo de nome para entrar no jogo (útil para celulares)
 DOM.inputPlayerName.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
         DOM.btnLogin.click();
@@ -275,14 +282,14 @@ DOM.btnLogin.addEventListener('click', () => {
             loadRooms();
         }
     }).catch(err => {
-        console.error("Erro na autenticaÃ§Ã£o:", err);
+        console.error("Erro na autenticação:", err);
         alert(`Falha ao se conectar: ${err.message}`);
         DOM.btnLogin.disabled = false;
         DOM.btnLogin.textContent = "Entrar no Jogo";
     });
 });
 
-generateAvatar(); // Inicia com um avatar aleatÃ³rio
+generateAvatar(); // Inicia com um avatar aleatório
 
 // 2. Sistema de Salas (Realtime DB)
 function loadRooms() {
@@ -347,16 +354,16 @@ DOM.btnCreateRoom.addEventListener('click', async () => {
         enterRoomLobby();
     } catch (error) {
         console.error("Erro ao criar sala:", error);
-        currentRoomId = null; // Limpa o ID jÃ¡ que a criaÃ§Ã£o falhou
+        currentRoomId = null; // Limpa o ID já que a criação falhou
         alert(`Falha ao criar sala: ${error.message}`);
     }
 });
 
 async function joinRoom(roomId) {
-    // Valida se a sala existe antes de tentar entrar (Ãºtil para links antigos)
+    // Valida se a sala existe antes de tentar entrar (útil para links antigos)
     const roomSnap = await get(ref(db, `rooms/${roomId}`));
     if (!roomSnap.exists()) {
-        alert("Esta sala nÃ£o existe mais ou jÃ¡ foi fechada.");
+        alert("Esta sala não existe mais ou já foi fechada.");
         window.history.replaceState({}, document.title, window.location.pathname);
         showScreen(DOM.rooms);
         loadRooms();
@@ -380,9 +387,29 @@ function enterRoomLobby() {
     DOM.btnReady.style.background = "";
     DOM.btnReady.style.color = "";
 
-    // Se a pessoa fechar a aba do navegador do nada, o Firebase avisa para removÃª-la
+    // Se a pessoa fechar a aba do navegador do nada, o Firebase avisa para removê-la
     const myPlayerRef = ref(db, `rooms/${currentRoomId}/players/${currentUser.id}`);
     onDisconnect(myPlayerRef).remove();
+
+    if (reactionListenerUnsubscribe) reactionListenerUnsubscribe();
+    lastReactionTime = Date.now(); // Reseta o tempo da última reação ao entrar na sala
+    reactionListenerUnsubscribe = onValue(ref(db, `rooms/${currentRoomId}/reactions`), (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            let maxTimestamp = lastReactionTime;
+            Object.values(data).forEach(reaction => {
+                if (reaction.timestamp > lastReactionTime) {
+                    if (reaction.type === 'sad') {
+                        showReactionAnimation('😭 TRISTE', 'var(--blue-apple)');
+                    } else {
+                        showReactionAnimation('🤣 HAHAHA', '#ff9500');
+                    }
+                    if (reaction.timestamp > maxTimestamp) maxTimestamp = reaction.timestamp;
+                }
+            });
+            lastReactionTime = maxTimestamp;
+        }
+    });
 
     const roomRef = ref(db, `rooms/${currentRoomId}`);
     
@@ -414,10 +441,10 @@ function enterRoomLobby() {
             }
         }
 
-        // Verifica se fui expulso pelo Host (Estava na sala, mas meu ID nÃ£o estÃ¡ mais na lista)
+        // Verifica se fui expulso pelo Host (Estava na sala, mas meu ID não está mais na lista)
         if (currentRoomData.hostId !== currentUser.id && (!currentRoomData.players || !currentRoomData.players[currentUser.id])) {
             if (roomListenerUnsubscribe) roomListenerUnsubscribe();
-            alert("VocÃª foi removido da sala pelo Host.");
+            alert("Você foi removido da sala pelo Host.");
             forceLeaveRoom();
             return;
         }
@@ -425,13 +452,13 @@ function enterRoomLobby() {
         renderRoomPlayers(currentRoomData);
         checkReadyStatus(currentRoomData);
         
-        // SincronizaÃ§Ã£o de Estado do Jogo
+        // Sincronização de Estado do Jogo
         if (currentRoomData.status === 'choosing_letter') {
             if (!state.isChoosingLetter) {
                 state.isChoosingLetter = true;
                 startLetterChoicePhase();
             }
-            // Host avanÃ§a a fase se o tempo limite estourar
+            // Host avança a fase se o tempo limite estourar
             if (currentRoomData.hostId === currentUser.id && currentRoomData.letterPhaseEndTime) {
                 const timeLeft = currentRoomData.letterPhaseEndTime - Date.now();
                 if (timeLeft <= 0) advanceToRoulette(currentRoomData);
@@ -445,7 +472,7 @@ function enterRoomLobby() {
                 state.isRoulette = true;
                 startRoulettePhase(currentRoomData.gameState);
             }
-            // Host avanÃ§a para o jogo oficial apÃ³s animaÃ§Ã£o
+            // Host avança para o jogo oficial após animação
             if (currentRoomData.hostId === currentUser.id && currentRoomData.rouletteEndTime) {
                 const timeLeft = currentRoomData.rouletteEndTime - Date.now();
                 if (timeLeft <= 0) {
@@ -508,15 +535,15 @@ function renderRoomPlayers(data) {
         const card = document.createElement('div');
         card.className = `player-card ${p.isReady ? 'ready' : ''}`;
         card.innerHTML = `
-            ${isHost && !isMe ? `<button class="btn-kick" data-id="${p.id}" title="Expulsar">âŒ</button>` : ''}
+            ${isHost && !isMe ? `<button class="btn-kick" data-id="${p.id}" title="Expulsar">❌</button>` : ''}
             <img src="${escapeHTML(p.avatar)}" class="player-avatar">
-            <strong style="font-size:14px;">${escapeHTML(p.name)} ${isMe ? '(VocÃª)' : ''}</strong>
+            <strong style="font-size:14px;">${escapeHTML(p.name)} ${isMe ? '(Você)' : ''}</strong>
             <span class="status-badge">${p.isReady ? 'PRONTO' : 'AGUARDANDO'}</span>
         `;
         DOM.roomPlayersGrid.appendChild(card);
     });
 
-    // Adicionar eventos para os botÃµes de expulsar
+    // Adicionar eventos para os botões de expulsar
     if (isHost) {
         document.querySelectorAll('.btn-kick').forEach(btn => {
             btn.addEventListener('click', async (e) => {
@@ -565,7 +592,7 @@ function sendMessage() {
     const text = DOM.chatInput.value.trim();
     if (!text || !currentRoomId) return;
     
-    // Guarda a referÃªncia da nova mensagem criada
+    // Guarda a referência da nova mensagem criada
     const newMessageRef = push(ref(db, `rooms/${currentRoomId}/chat`), {
         senderId: currentUser.id,
         senderName: currentUser.name,
@@ -575,7 +602,7 @@ function sendMessage() {
     
     DOM.chatInput.value = '';
 
-    // Remove a mensagem apÃ³s 60 segundos (60000 milissegundos) para nÃ£o pesar o banco
+    // Remove a mensagem após 60 segundos (60000 milissegundos) para não pesar o banco
     setTimeout(() => {
         remove(newMessageRef).catch(() => {});
     }, 60000);
@@ -589,12 +616,12 @@ DOM.chatInput.addEventListener('keypress', (e) => {
 DOM.btnCopyLink.addEventListener('click', () => {
     const inviteLink = `${window.location.origin}${window.location.pathname}?room=${currentRoomId}`;
     navigator.clipboard.writeText(inviteLink).then(() => {
-        DOM.btnCopyLink.textContent = "âœ… Copiado!";
-        setTimeout(() => DOM.btnCopyLink.textContent = "ðŸ”— Copiar Link", 2000);
+        DOM.btnCopyLink.textContent = "✅ Copiado!";
+        setTimeout(() => DOM.btnCopyLink.textContent = "🔗 Copiar Link", 2000);
     });
 });
 
-// Mensagem de Sistema AutomÃ¡tica
+// Mensagem de Sistema Automática
 function sendSystemMessage(text) {
     if (!currentRoomId) return;
     const newMessageRef = push(ref(db, `rooms/${currentRoomId}/chat`), {
@@ -605,19 +632,20 @@ function sendSystemMessage(text) {
     });
     setTimeout(() => {
         remove(newMessageRef).catch(() => {});
-    }, 60000); // TambÃ©m serÃ¡ apagada automaticamente
+    }, 60000); // Também será apagada automaticamente
 }
 
 async function leaveRoom() {
     if (roomListenerUnsubscribe) roomListenerUnsubscribe();
     if (chatListenerUnsubscribe) chatListenerUnsubscribe();
+    if (reactionListenerUnsubscribe) reactionListenerUnsubscribe();
     if (idleRoomTimer) clearTimeout(idleRoomTimer);
     
     if (currentRoomData && currentRoomId) {
         const playersCount = currentRoomData.players ? Object.keys(currentRoomData.players).length : 0;
         
         if (playersCount <= 1) {
-            // Se for o Ãºltimo a sair, destrÃ³i a sala
+            // Se for o último a sair, destrói a sala
             await remove(ref(db, `rooms/${currentRoomId}`));
         } else if (currentRoomData.hostId === currentUser.id) {
             // Se for o host saindo e tiver mais gente, passa o host para outro
@@ -639,10 +667,13 @@ async function leaveRoom() {
 }
 
 function forceLeaveRoom(stayInLobby = false) {
+    if (reactionListenerUnsubscribe) reactionListenerUnsubscribe();
     state.isPlaying = false;
     state.isEvaluating = false;
     state.isChoosingLetter = false;
     state.isRoulette = false;
+    state.isResults = false;
+    state.currentEvaluationThemeIndex = 0;
     if(state.hostPhaseTimer) clearTimeout(state.hostPhaseTimer);
     
     if (!stayInLobby) {
@@ -695,7 +726,7 @@ function startLetterChoicePhase() {
 
 DOM.btnSubmitLetter.addEventListener('click', async () => {
     const letter = DOM.inputChosenLetter.value.trim().toUpperCase();
-    if (!letter || !/^[A-Z]$/.test(letter)) return alert("Digite uma letra vÃ¡lida do alfabeto!");
+    if (!letter || !/^[A-Z]$/.test(letter)) return alert("Digite uma letra válida do alfabeto!");
     
     DOM.btnSubmitLetter.disabled = true;
     DOM.btnRandomLetter.disabled = true;
@@ -809,6 +840,20 @@ function syncOnlineGame(gameState) {
             state.isEvaluating = true;
             clearInterval(state.timerInterval);
             processAnswersAndEvaluate();
+        } else {
+            // Sincroniza o progresso da tela de avaliação se já estiver nela
+            const remoteEvalIndex = gameState.evalIndex || 0;
+            const remoteEvalFinished = gameState.isEvalFinished || false;
+
+            if (remoteEvalFinished && !state.isResults) {
+                state.isResults = true;
+                state.roundAnswers = gameState.answers || state.roundAnswers; // Puxa os julgamentos do Host
+                calculateScores();
+            } else if (remoteEvalIndex > state.currentEvaluationThemeIndex) {
+                state.currentEvaluationThemeIndex = remoteEvalIndex;
+                state.roundAnswers = gameState.answers || state.roundAnswers;
+                renderEvaluationScreen();
+            }
         }
         return;
     }
@@ -816,6 +861,9 @@ function syncOnlineGame(gameState) {
     const activePlayer = state.players[gameState.currentTurnIndex];
     state.currentPlayerIndex = gameState.currentTurnIndex;
     const isMyTurn = activePlayer === currentUser.name;
+
+    const isHost = currentRoomData && currentRoomData.hostId === currentUser.id;
+    DOM.btnSkipTurn.classList.toggle('hidden', !isHost || gameState.turnEndTime === 0);
 
     if (gameState.turnEndTime === 0) {
         // Aguardando jogador iniciar o turno
@@ -833,7 +881,7 @@ function syncOnlineGame(gameState) {
         
         clearInterval(state.timerInterval);
         state.timerInterval = setInterval(() => {
-            // RelÃ³gio baseado na hora universal para manter todos em sincronia
+            // Relógio baseado na hora universal para manter todos em sincronia
             const timeLeft = Math.max(0, Math.ceil((gameState.turnEndTime - Date.now()) / 1000));
             DOM.gameTimer.textContent = timeLeft;
             
@@ -896,9 +944,66 @@ DOM.btnStop.addEventListener('click', () => {
     endOnlineTurn();
 });
 
+DOM.btnSkipTurn.addEventListener('click', async () => {
+    if (currentRoomId && currentRoomData && currentRoomData.hostId === currentUser.id) {
+        await update(ref(db, `rooms/${currentRoomId}/gameState`), {
+            turnEndTime: Date.now() // Zera o tempo instantaneamente para todos
+        });
+    }
+});
+
+let isReactionCooldown = false;
+
+function startReactionCooldown() {
+    isReactionCooldown = true;
+    DOM.btnMockHahaha.disabled = true;
+    DOM.btnMockSad.disabled = true;
+    
+    setTimeout(() => {
+        isReactionCooldown = false;
+        DOM.btnMockHahaha.disabled = false;
+        DOM.btnMockSad.disabled = false;
+    }, 3000); // 3 segundos de recarga
+}
+
+DOM.btnMockHahaha.addEventListener('click', () => {
+    if (!currentRoomId || isReactionCooldown) return;
+    startReactionCooldown();
+    const reactionRef = push(ref(db, `rooms/${currentRoomId}/reactions`), {
+        type: 'hahaha',
+        timestamp: Date.now()
+    });
+    setTimeout(() => remove(reactionRef).catch(() => {}), 5000); // Limpa o banco rapidamente
+});
+
+DOM.btnMockSad.addEventListener('click', () => {
+    if (!currentRoomId || isReactionCooldown) return;
+    startReactionCooldown();
+    const reactionRef = push(ref(db, `rooms/${currentRoomId}/reactions`), {
+        type: 'sad',
+        timestamp: Date.now()
+    });
+    setTimeout(() => remove(reactionRef).catch(() => {}), 5000);
+});
+
+function showReactionAnimation(text, color) {
+    const el = document.createElement('div');
+    el.className = 'feedback-popup';
+    el.textContent = text;
+    el.style.color = color;
+    
+    const top = 20 + Math.random() * 60;
+    const left = 20 + Math.random() * 60;
+    el.style.top = `${top}%`;
+    el.style.left = `${left}%`;
+    
+    DOM.feedbackContainer.appendChild(el);
+    setTimeout(() => el.remove(), 1500);
+}
+
 // Submeter jogo (STOP) apertando ENTER
 document.addEventListener('keydown', (e) => {
-    // Verifica se a tela ativa Ã© a de Jogo e se o botÃ£o STOP estÃ¡ visÃ­vel (indicando que Ã© a minha vez)
+    // Verifica se a tela ativa é a de Jogo e se o botão STOP está visível (indicando que é a minha vez)
     if (e.key === 'Enter' && DOM.game.classList.contains('active') && DOM.btnStop.style.display === 'block') {
         endOnlineTurn();
     }
@@ -928,7 +1033,7 @@ function processAnswersAndEvaluate() {
     let acertos = 0;
     let erros = 0;
     
-    // ReferÃªncia para as respostas originais do banco de dados
+    // Referência para as respostas originais do banco de dados
     const dbAnswers = state.roundAnswers;
     
     for (const playerName of state.players) {
@@ -943,7 +1048,7 @@ function processAnswersAndEvaluate() {
             const inputEl = playerName === currentUser.name ? document.querySelector(`.theme-answer[data-theme="${theme}"]`) : null;
 
             if (!answer) {
-                status = 'rejected'; // Vazio Ã© errado
+                status = 'rejected'; // Vazio é errado
                 if (playerName === currentUser.name) {
                     erros++;
                     if(inputEl) inputEl.classList.add('shake');
@@ -974,10 +1079,10 @@ function processAnswersAndEvaluate() {
         }
     }
 
-    // Atualiza o estado global com as respostas jÃ¡ processadas
+    // Atualiza o estado global com as respostas já processadas
     state.roundAnswers = processedAnswers;
 
-    // Exibe a animaÃ§Ã£o "Just Dance" apenas baseada na performance local
+    // Exibe a animação "Just Dance" apenas baseada na performance local
     if (erros > 0) {
         showJustDanceFeedback('miss');
     } else if (acertos === state.currentThemes.length) {
@@ -985,65 +1090,153 @@ function processAnswersAndEvaluate() {
     }
 
     setTimeout(() => {
-        if (state.wordsToEvaluate.length > 0) {
-            renderEvaluationScreen();
-        } else {
-            calculateScores();
-        }
+        // Todo mundo vai para a tela de avaliação ver as respostas
+        state.currentEvaluationThemeIndex = 0;
+        renderEvaluationScreen();
     }, 2000);
 }
 
 function renderEvaluationScreen() {
     DOM.evaluationList.innerHTML = '';
-    state.wordsToEvaluate.forEach((item, index) => {
+    
+    const isHost = currentRoomData && currentRoomData.hostId === currentUser.id;
+    const theme = state.currentThemes[state.currentEvaluationThemeIndex];
+    const progressText = `Tema ${state.currentEvaluationThemeIndex + 1} de ${state.currentThemes.length}`;
+
+    // Adiciona o Wrapper da Animação CSS
+    const animWrapper = document.createElement('div');
+    animWrapper.className = 'slide-in-right';
+
+    const themeSection = document.createElement('div');
+    themeSection.className = 'eval-theme-section';
+    themeSection.innerHTML = `
+        <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 5px; font-weight: 600;">${progressText}</div>
+        <h3 style="color: var(--blue-apple); border-bottom: 2px solid var(--blue-apple); padding-bottom: 5px; text-align: left;">${theme}</h3>
+    `;
+    
+    const answersGrid = document.createElement('div');
+    answersGrid.style.display = 'grid';
+    answersGrid.style.gap = '10px';
+    answersGrid.style.marginTop = '10px';
+    
+    state.players.forEach(playerName => {
+        const ansData = state.roundAnswers[playerName][theme];
         const div = document.createElement('div');
         div.className = 'eval-item';
+        div.style.flexDirection = 'column';
+        div.style.alignItems = 'flex-start';
+        div.style.background = '#f9f9f9';
+        div.style.padding = '10px';
+        div.style.borderRadius = '8px';
+        div.style.border = '1px solid #e8e8ed';
+        
+        let statusText = '';
+        let actionsHTML = '';
+        
+        if (ansData.status === 'accepted') {
+            statusText = `<span style="color: var(--green-apple); font-weight: bold; font-size: 13px;">✔ Sistema aprovou</span>`;
+        } else if (ansData.status === 'rejected') {
+            statusText = `<span style="color: var(--red-apple); font-weight: bold; font-size: 13px;">✖ Incorreto ou Vazio</span>`;
+        } else {
+            statusText = `<span style="color: #ff9500; font-weight: bold; font-size: 13px;">⚠ Sistema não reconheceu</span>`;
+            
+            if (isHost) {
+                actionsHTML = `
+                    <div class="eval-actions" style="margin-top: 8px; width: 100%; display: flex; justify-content: space-around;">
+                        <button class="btn-text btn-accept" data-player="${playerName}" data-theme="${theme}" style="background: rgba(52, 199, 89, 0.1);">👍 Válido</button>
+                        <button class="btn-text btn-reject" data-player="${playerName}" data-theme="${theme}" style="color:var(--red-apple); background: rgba(255, 59, 48, 0.1);">👎 Inválido</button>
+                    </div>
+                `;
+            } else {
+                actionsHTML = `
+                    <div style="margin-top: 8px; font-size: 12px; color: var(--text-secondary); width: 100%; text-align: center;">
+                        Aguardando o Host julgar...
+                    </div>
+                `;
+            }
+        }
+        
         div.innerHTML = `
-            <div class="eval-details">
-                <strong>${item.theme}:</strong> <span class="eval-word">${item.rawAnswer}</span> <br>
-                <small style="color:var(--text-secondary)">por ${item.playerName}</small>
+            <div style="width: 100%; text-align: left;">
+                <small style="color:var(--text-secondary); font-weight: bold;">${playerName}</small><br>
+                <span class="eval-word" style="font-size: 18px; display: block; margin: 4px 0;">${ansData.raw || '<em>(vazio)</em>'}</span>
+                ${statusText}
             </div>
-            <div class="eval-actions">
-                <button class="btn-text btn-accept" data-index="${index}">ðŸ‘ Aceitar</button>
-                <button class="btn-text btn-reject" data-index="${index}" style="color:var(--red-apple)">ðŸ‘Ž Rejeitar</button>
-            </div>
+            ${actionsHTML}
         `;
-        DOM.evaluationList.appendChild(div);
+        answersGrid.appendChild(div);
     });
+    
+    themeSection.appendChild(answersGrid);
+    animWrapper.appendChild(themeSection);
+    DOM.evaluationList.appendChild(animWrapper);
 
-    // Eventos dos botÃµes de avaliaÃ§Ã£o
-    document.querySelectorAll('.btn-accept').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const index = e.target.dataset.index;
-            state.wordsToEvaluate[index].status = 'accepted';
-            e.target.classList.add('selected');
-            e.target.nextElementSibling.classList.remove('selected');
+    if (isHost) {
+        document.querySelectorAll('.btn-accept').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const pName = e.target.dataset.player;
+                const pTheme = e.target.dataset.theme;
+                state.roundAnswers[pName][pTheme].status = 'accepted';
+                e.target.style.background = 'var(--green-apple)';
+                e.target.style.color = 'white';
+                e.target.nextElementSibling.style.background = 'rgba(255, 59, 48, 0.1)';
+                e.target.nextElementSibling.style.color = 'var(--red-apple)';
+            });
         });
-    });
 
-    document.querySelectorAll('.btn-reject').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const index = e.target.dataset.index;
-            state.wordsToEvaluate[index].status = 'rejected';
-            e.target.classList.add('selected');
-            e.target.previousElementSibling.classList.remove('selected');
+        document.querySelectorAll('.btn-reject').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const pName = e.target.dataset.player;
+                const pTheme = e.target.dataset.theme;
+                state.roundAnswers[pName][pTheme].status = 'rejected';
+                e.target.style.background = 'var(--red-apple)';
+                e.target.style.color = 'white';
+                e.target.previousElementSibling.style.background = 'rgba(52, 199, 89, 0.1)';
+                e.target.previousElementSibling.style.color = 'var(--blue-apple)';
+            });
         });
-    });
+
+        DOM.btnFinishEvaluation.style.display = 'block';
+        if (state.currentEvaluationThemeIndex < state.currentThemes.length - 1) {
+            DOM.btnFinishEvaluation.textContent = "Próximo Tema";
+        } else {
+            DOM.btnFinishEvaluation.textContent = "Finalizar Votação";
+        }
+    } else {
+        DOM.btnFinishEvaluation.style.display = 'none';
+        
+        const waitMsg = document.createElement('div');
+        waitMsg.style.textAlign = 'center';
+        waitMsg.style.marginTop = '15px';
+        waitMsg.style.color = 'var(--text-secondary)';
+        waitMsg.innerHTML = '<strong>Aguarde o Host finalizar a votação...</strong>';
+        DOM.evaluationList.appendChild(waitMsg);
+    }
 
     showScreen(DOM.evaluation);
 }
 
-DOM.btnFinishEvaluation.addEventListener('click', () => {
-    // Atualizar status das palavras avaliadas
-    state.wordsToEvaluate.forEach(item => {
-        // Se nÃ£o clicaram em nada, rejeita por padrÃ£o
-        const finalStatus = item.status === 'pending' ? 'rejected' : item.status;
-        state.roundAnswers[item.playerName][item.theme].status = finalStatus;
+DOM.btnFinishEvaluation.addEventListener('click', async () => {
+    const currentTheme = state.currentThemes[state.currentEvaluationThemeIndex];
+    
+    state.players.forEach(playerName => {
+        if (state.roundAnswers[playerName][currentTheme].status === 'pending') {
+            state.roundAnswers[playerName][currentTheme].status = 'rejected';
+        }
     });
-    calculateScores();
+    
+    let nextIndex = state.currentEvaluationThemeIndex + 1;
+    let isFinished = nextIndex >= state.currentThemes.length;
+
+    // O Host salva a decisão e avança a fase no Firebase para todos verem!
+    await update(ref(db, `rooms/${currentRoomId}/gameState`), {
+        evalIndex: nextIndex,
+        isEvalFinished: isFinished,
+        answers: state.roundAnswers // Envia as correções oficiais feitas pelo Host
+    });
 });
 
-// 6. PontuaÃ§Ã£o e Placar
+// 6. Pontuação e Placar
 function calculateScores() {
     // Agrupar respostas para verificar palavras iguais
     const answersByTheme = {}; // { theme: { normalizedWord: [playerName1, playerName2] } }
@@ -1071,8 +1264,10 @@ function calculateScores() {
                 if (count > 1) {
                     roundScore += 5; // Palavra repetida
                 } else {
-                    roundScore += 10; // Palavra Ãºnica
+                roundScore += 15; // Palavra única
                 }
+            } else if (ansData.status === 'rejected') {
+                roundScore -= 5; // Penalidade por erro ou campo vazio
             }
         });
         state.scores[playerName] += roundScore;
@@ -1084,7 +1279,7 @@ function calculateScores() {
 function renderScoreboard() {
     DOM.scoreboard.innerHTML = '';
     
-    // Ordenar por pontuaÃ§Ã£o
+    // Ordenar por pontuação
     const sortedPlayers = [...state.players].sort((a, b) => state.scores[b] - state.scores[a]);
 
     sortedPlayers.forEach(p => {
@@ -1113,7 +1308,7 @@ DOM.btnNextRound.addEventListener('click', async () => {
         letterChoices: null
     };
     
-    // Remove o status de "pronto" de todos para forÃ§Ã¡-los a dar pronto novamente
+    // Remove o status de "pronto" de todos para forçá-los a dar pronto novamente
     if (currentRoomData && currentRoomData.players) {
         Object.keys(currentRoomData.players).forEach(playerId => {
             updates[`players/${playerId}/isReady`] = false;
@@ -1126,4 +1321,3 @@ DOM.btnNextRound.addEventListener('click', async () => {
 DOM.btnLeaveResults.addEventListener('click', () => {
     leaveRoom();
 });
-
