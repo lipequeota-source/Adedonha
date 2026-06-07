@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adedonha Neon</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="app-container">
+        
+        <!-- Tela de Login -->
+        <section id="screen-login" class="screen active apple-card">
+            <h1 class="title">Adedonha</h1>
+            <p class="subtitle">Crie seu perfil para jogar</p>
+            
+            <div class="avatar-setup">
+                <img id="player-avatar-preview" src="" alt="Avatar" class="avatar-large">
+                <div class="avatar-controls">
+                    <div class="customizer-grid">
+                        <select id="avatar-style" class="apple-select" title="Estilo Principal">
+                            <option value="avataaars" selected>Estilo: Humano</option>
+                            <option value="micah">Estilo: Micah</option>
+                            <option value="bottts">Estilo: Robô</option>
+                        </select>
+                        <select id="avatar-top" class="apple-select" title="Cabelo/Cabeça">
+                            <option value="shortRound,theCaesar">Cabelo Curto</option>
+                            <option value="longButNotTooLong,curly">Cabelo Longo</option>
+                            <option value="dreads">dreads,dreads01</option>
+                            <option value="hat,hijab">Acessório</option>
+                        </select>
+                        <select id="avatar-skin" class="apple-select" title="Cor da Pele">
+                            <option value="ffdbb4,edb98a">Pele: Clara</option>
+                            <option value="d08b5b,fd9841">Pele: Parda</option>
+                            <option value="614335">Pele: Escura</option>
+                        </select>
+                        <select id="avatar-mouth" class="apple-select" title="Expressão Facial">
+                            <option value="smile,twinkle">Rosto: Feliz</option>
+                            <option value="sad,grimace">Rosto: Triste</option>
+                            <option value="serious">Rosto: Sério</option>
+                            <option value="screamOpen,disbelief">Rosto: Surpreso</option>
+                        </select>
+                        <select id="avatar-clothing" class="apple-select" title="Roupa">
+                            <option value="shirtCrewNeck,shirtScoopNeck">Roupa: Camisa</option>
+                            <option value="blazerAndShirt,blazerAndSweater">Roupa: Social</option>
+                            <option value="hoodie,overall">Roupa: Moletom</option>
+                        </select>
+                        <div class="bg-color-wrapper">
+                            <span class="color-label">Fundo:</span>
+                            <input type="color" id="avatar-bg-color" value="#e8e8ed" class="apple-color-picker" title="Cor de fundo">
+                        </div>
+                    </div>
+                    <button id="btn-random-avatar" class="btn-icon">🔄 Gerar Combinação Aleatória</button>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <input type="text" id="input-player-name" class="apple-input" placeholder="Digite seu nome..." autocomplete="off" maxlength="20">
+            </div>
+            
+            <button id="btn-login" class="btn-primary">Entrar no Jogo</button>
+        </section>
+
+        <!-- Tela de Lista de Salas -->
+        <section id="screen-rooms" class="screen hidden apple-card">
+            <h2 class="title">Salas Disponíveis</h2>
+            <div id="rooms-list" class="rooms-container">
+                <!-- Salas geradas via JS -->
+            </div>
+            <div class="actions-bottom">
+                <button id="btn-create-room" class="btn-secondary">+ Criar Nova Sala</button>
+            </div>
+        </section>
+
+        <!-- Tela de Lobby da Sala -->
+        <section id="screen-room-lobby" class="screen hidden apple-card">
+            <div class="room-header">
+                <h2 class="title" id="room-title-display">Sala</h2>
+                <div>
+                    <button id="btn-copy-link" class="btn-icon" style="margin-bottom: 0;">🔗 Copiar Link</button>
+                    <button id="btn-leave-room" class="btn-text">Sair</button>
+                </div>
+            </div>
+            
+            <div id="room-players" class="players-grid">
+                <!-- Jogadores gerados via JS -->
+            </div>
+
+            <div class="room-actions">
+                <button id="btn-ready" class="btn-secondary">Estou Pronto</button>
+                <div id="host-controls" class="hidden">
+                    <button id="btn-start-game" class="btn-primary" disabled>Começar Jogo</button>
+                </div>
+            </div>
+
+            <!-- Área do Chat -->
+            <div class="chat-container">
+                <div id="chat-messages" class="chat-messages"></div>
+                <div class="chat-input-area">
+                    <input type="text" id="chat-input" class="apple-input" placeholder="Digite no chat..." autocomplete="off" maxlength="100">
+                    <button id="btn-send-chat" class="btn-primary">Enviar</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tela de Transição de Turno -->
+        <section id="screen-turn-transition" class="screen hidden apple-card">
+            <h2>Aguarde sua vez, <span id="current-player-display"></span></h2>
+            <div class="letter-display-small">Letra: <span id="round-letter-display" class="highlight-letter"></span></div>
+            <button id="btn-start-turn" class="btn-primary">Acessar Turno</button>
+        </section>
+
+        <!-- Tela do Jogo -->
+        <section id="screen-game" class="screen hidden game-area">
+            <div class="apple-header">
+                <div class="info-box">Vez de: <span id="game-player" class="highlight-text"></span></div>
+                <div class="info-box"><span id="game-letter" class="highlight-letter">A</span></div>
+                <div class="info-box timer">Tempo: <span id="game-timer">60</span>s</div>
+            </div>
+            
+            <div id="themes-container" class="themes-list">
+                <!-- Temas serão gerados via JS -->
+            </div>
+
+            <div class="floating-stop">
+                <button id="btn-stop" class="btn-danger">S T O P !</button>
+            </div>
+        </section>
+
+        <!-- Tela de Avaliação -->
+        <section id="screen-evaluation" class="screen hidden apple-card">
+            <h2 class="title">Avaliação</h2>
+            <p class="subtitle">A comunidade decide as palavras desconhecidas.</p>
+            
+            <div id="evaluation-list" class="eval-list">
+                <!-- Itens para avaliar via JS -->
+            </div>
+
+            <button id="btn-finish-evaluation" class="btn-primary">Finalizar Votação</button>
+        </section>
+
+        <!-- Tela de Resultados (Placar) -->
+        <section id="screen-results" class="screen hidden apple-card">
+            <h2 class="title">Placar Final</h2>
+            <div id="scoreboard" class="scoreboard">
+                <!-- Placar via JS -->
+            </div>
+            <button id="btn-next-round" class="btn-primary">Jogar Novamente</button>
+            <button id="btn-leave-results" class="btn-secondary" style="margin-top: 12px;">Sair da Sala</button>
+        </section>
+
+        <!-- Container de Feedback "Just Dance" -->
+        <div id="feedback-container"></div>
+
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
