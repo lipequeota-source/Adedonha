@@ -1,4 +1,4 @@
-// --- CONFIGURAÇÃO DO FIREBASE ---
+// --- CONFIGURAÃ‡ÃƒO DO FIREBASE ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getDatabase, ref, set, push, onValue, update, remove, get, onDisconnect } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
@@ -87,20 +87,20 @@ const DOM = {
 };
 
 const ALL_THEMES = [
-    "Comidas", "Estado", "País", "Objeto", 
+    "Comidas", "Estado", "PaÃ­s", "Objeto", 
     "Nome de pessoa", "Verbo", "Tem na festa", "Tem na praia"
 ];
 
-// Dicionário básico para validação local
+// DicionÃ¡rio bÃ¡sico para validaÃ§Ã£o local
 const DICTIONARY = {
     "Comidas": ["abacate", "abacaxi", "arroz", "batata", "bolo", "carne", "cebola", "chocolate", "doce", "empada", "feijao", "frango", "goiaba", "hamburguer", "iogurte", "jaca", "kiwi", "laranja", "limao", "macarrao", "maca", "morango", "nabo", "ovo", "pao", "peixe", "queijo", "repolho", "salsicha", "tomate", "uva"],
     "Estado": ["acre", "alagoas", "amapa", "amazonas", "bahia", "ceara", "espirito santo", "goias", "maranhao", "mato grosso", "mato grosso do sul", "minas gerais", "para", "paraiba", "parana", "pernambuco", "piaui", "rio de janeiro", "rio grande do norte", "rio grande do sul", "rondonia", "roraima", "santa catarina", "sao paulo", "sergipe", "tocantins", "alaska", "california", "florida", "texas"],
-    "País": ["afeganistao", "alemanha", "angola", "argentina", "australia", "bahamas", "belgica", "bolivia", "brasil", "bulgaria", "camaroes", "canada", "chile", "china", "colombia", "coreia", "croacia", "cuba", "dinamarca", "egito", "equador", "espanha", "estados unidos", "franca", "grecia", "holanda", "hungria", "india", "indonesia", "inglaterra", "irao", "iraque", "irlanda", "israel", "italia", "jamaica", "japao", "libano", "madagascar", "malasia", "marrocos", "mexico", "mocambique", "noruega", "nova zelandia", "paraguai", "peru", "polonia", "portugal", "quenia", "reino unido", "romenia", "russia", "servia", "siria", "suecia", "suica", "tailandia", "taiwan", "turquia", "ucrania", "uruguai", "venezuela", "vietna", "zimbabue"],
+    "PaÃ­s": ["afeganistao", "alemanha", "angola", "argentina", "australia", "bahamas", "belgica", "bolivia", "brasil", "bulgaria", "camaroes", "canada", "chile", "china", "colombia", "coreia", "croacia", "cuba", "dinamarca", "egito", "equador", "espanha", "estados unidos", "franca", "grecia", "holanda", "hungria", "india", "indonesia", "inglaterra", "irao", "iraque", "irlanda", "israel", "italia", "jamaica", "japao", "libano", "madagascar", "malasia", "marrocos", "mexico", "mocambique", "noruega", "nova zelandia", "paraguai", "peru", "polonia", "portugal", "quenia", "reino unido", "romenia", "russia", "servia", "siria", "suecia", "suica", "tailandia", "taiwan", "turquia", "ucrania", "uruguai", "venezuela", "vietna", "zimbabue"],
     "Objeto": ["anel", "armario", "balde", "bola", "cadeira", "cama", "caneta", "carro", "celular", "chave", "copo", "dado", "espelho", "faca", "faca", "garfo", "guitarra", "helicoptero", "ima", "janela", "livro", "lapis", "mesa", "navio", "oculos", "panela", "quadro", "relogio", "sapato", "tampa", "tesoura", "urso", "vaso", "xicara", "ziper"],
     "Nome de pessoa": ["alice", "ana", "andre", "arthur", "bruno", "bianca", "carlos", "camila", "daniel", "diego", "eduardo", "elena", "felipe", "fernanda", "gabriel", "giovana", "hugo", "helena", "igor", "isabela", "joao", "julia", "kleber", "karina", "lucas", "laura", "marcos", "maria", "nicolas", "natalia", "otavio", "olivia", "paulo", "pedro", "rafael", "roberta", "samuel", "sofia", "thiago", "tatiana", "ulisses", "ursula", "victor", "vitoria", "wagner", "xuxa", "yuri", "zeca"],
     "Verbo": ["amar", "andar", "beber", "brincar", "cantar", "correr", "dancar", "dormir", "escrever", "estudar", "falar", "fazer", "ganhar", "gostar", "haver", "ir", "jogar", "juntar", "ler", "limpar", "mandar", "morar", "nadar", "nascer", "olhar", "ouvir", "pagar", "pegar", "querer", "quebrar", "rir", "roubar", "sair", "sorrir", "ter", "tocar", "usar", "unir", "ver", "viver", "xingar", "zangar"],
     "Tem na festa": ["agua", "amigos", "bolo", "balao", "bebida", "cerveja", "copo", "convidado", "danca", "docinho", "enfeite", "fantasia", "garcom", "gelo", "musica", "mesa", "prato", "presente", "refrigerante", "salgadinho"],
-    "Tem na praia": ["agua", "areia", "barco", "biquini", "boia", "cadeira", "calor", "caranguejo", "concha", "coqueiro", "guarda-sol", "mar", "onda", "peixe", "picolé", "prancha", "protetor solar", "sal", "sol", "sunga", "toalha"]
+    "Tem na praia": ["agua", "areia", "barco", "biquini", "boia", "cadeira", "calor", "caranguejo", "concha", "coqueiro", "guarda-sol", "mar", "onda", "peixe", "picolÃ©", "prancha", "protetor solar", "sal", "sol", "sunga", "toalha"]
 };
 
 // Estado local e online do jogo
@@ -133,7 +133,7 @@ let state = {
     isEvaluating: false,
     isChoosingLetter: false,
     isRoulette: false,
-    hostPhaseTimer: null, // Timer exclusivo do Host para controlar fases automáticas
+    hostPhaseTimer: null, // Timer exclusivo do Host para controlar fases automÃ¡ticas
     roundLetter: '',
     currentThemes: [],
     roundAnswers: {}, // { playerName: { theme: answer } }
@@ -143,7 +143,7 @@ let state = {
     wordsToEvaluate: []
 };
 
-// --- FUNÇÕES UTILITÁRIAS ---
+// --- FUNÃ‡Ã•ES UTILITÃRIAS ---
 function escapeHTML(str) {
     if (!str) return '';
     return String(str).replace(/[&<>'"]/g, tag => ({
@@ -179,13 +179,13 @@ function shuffleArray(array) {
     return array;
 }
 
-// --- ANIMAÇÕES JUST DANCE ---
+// --- ANIMAÃ‡Ã•ES JUST DANCE ---
 function showJustDanceFeedback(type) {
     const el = document.createElement('div');
     el.className = `feedback-popup feedback-${type}`;
     el.textContent = type === 'perfect' ? 'PERFEITO!' : 'ERROU!';
     
-    // Adiciona uma pequena variação de posição
+    // Adiciona uma pequena variaÃ§Ã£o de posiÃ§Ã£o
     const top = 30 + Math.random() * 40;
     const left = 20 + Math.random() * 60;
     el.style.top = `${top}%`;
@@ -243,7 +243,7 @@ DOM.avatarSkin.addEventListener('change', generateAvatar);
 DOM.avatarMouth.addEventListener('change', generateAvatar);
 DOM.avatarClothing.addEventListener('change', generateAvatar);
 
-// Permite apertar Enter no campo de nome para entrar no jogo (útil para celulares)
+// Permite apertar Enter no campo de nome para entrar no jogo (Ãºtil para celulares)
 DOM.inputPlayerName.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
         DOM.btnLogin.click();
@@ -275,20 +275,20 @@ DOM.btnLogin.addEventListener('click', () => {
             loadRooms();
         }
     }).catch(err => {
-        console.error("Erro na autenticação:", err);
+        console.error("Erro na autenticaÃ§Ã£o:", err);
         alert(`Falha ao se conectar: ${err.message}`);
         DOM.btnLogin.disabled = false;
         DOM.btnLogin.textContent = "Entrar no Jogo";
     });
 });
 
-generateAvatar(); // Inicia com um avatar aleatório
+generateAvatar(); // Inicia com um avatar aleatÃ³rio
 
 // 2. Sistema de Salas (Realtime DB)
 function loadRooms() {
     const roomsRef = ref(db, 'rooms');
     onValue(roomsRef, (snapshot) => {
-        if (currentRoomId) return; // Não atualiza lista se já estiver em uma sala
+        if (currentRoomId) return; // NÃ£o atualiza lista se jÃ¡ estiver em uma sala
         
         DOM.roomsList.innerHTML = '';
         const data = snapshot.val();
@@ -347,16 +347,16 @@ DOM.btnCreateRoom.addEventListener('click', async () => {
         enterRoomLobby();
     } catch (error) {
         console.error("Erro ao criar sala:", error);
-        currentRoomId = null; // Limpa o ID já que a criação falhou
+        currentRoomId = null; // Limpa o ID jÃ¡ que a criaÃ§Ã£o falhou
         alert(`Falha ao criar sala: ${error.message}`);
     }
 });
 
 async function joinRoom(roomId) {
-    // Valida se a sala existe antes de tentar entrar (útil para links antigos)
+    // Valida se a sala existe antes de tentar entrar (Ãºtil para links antigos)
     const roomSnap = await get(ref(db, `rooms/${roomId}`));
     if (!roomSnap.exists()) {
-        alert("Esta sala não existe mais ou já foi fechada.");
+        alert("Esta sala nÃ£o existe mais ou jÃ¡ foi fechada.");
         window.history.replaceState({}, document.title, window.location.pathname);
         showScreen(DOM.rooms);
         loadRooms();
@@ -380,7 +380,7 @@ function enterRoomLobby() {
     DOM.btnReady.style.background = "";
     DOM.btnReady.style.color = "";
 
-    // Se a pessoa fechar a aba do navegador do nada, o Firebase avisa para removê-la
+    // Se a pessoa fechar a aba do navegador do nada, o Firebase avisa para removÃª-la
     const myPlayerRef = ref(db, `rooms/${currentRoomId}/players/${currentUser.id}`);
     onDisconnect(myPlayerRef).remove();
 
@@ -400,7 +400,7 @@ function enterRoomLobby() {
             idleRoomTimer = null;
         }
         
-        // Se a sala está aguardando, inicia a contagem de 60 segundos
+        // Se a sala estÃ¡ aguardando, inicia a contagem de 60 segundos
         if (currentRoomData.status === 'waiting' && currentRoomData.waitingSince) {
             const timeLeft = 60000 - (Date.now() - currentRoomData.waitingSince);
             if (timeLeft <= 0) {
@@ -414,10 +414,10 @@ function enterRoomLobby() {
             }
         }
 
-        // Verifica se fui expulso pelo Host (Estava na sala, mas meu ID não está mais na lista)
+        // Verifica se fui expulso pelo Host (Estava na sala, mas meu ID nÃ£o estÃ¡ mais na lista)
         if (currentRoomData.hostId !== currentUser.id && (!currentRoomData.players || !currentRoomData.players[currentUser.id])) {
             if (roomListenerUnsubscribe) roomListenerUnsubscribe();
-            alert("Você foi removido da sala pelo Host.");
+            alert("VocÃª foi removido da sala pelo Host.");
             forceLeaveRoom();
             return;
         }
@@ -425,13 +425,13 @@ function enterRoomLobby() {
         renderRoomPlayers(currentRoomData);
         checkReadyStatus(currentRoomData);
         
-        // Sincronização de Estado do Jogo
+        // SincronizaÃ§Ã£o de Estado do Jogo
         if (currentRoomData.status === 'choosing_letter') {
             if (!state.isChoosingLetter) {
                 state.isChoosingLetter = true;
                 startLetterChoicePhase();
             }
-            // Host avança a fase se o tempo limite estourar
+            // Host avanÃ§a a fase se o tempo limite estourar
             if (currentRoomData.hostId === currentUser.id && currentRoomData.letterPhaseEndTime) {
                 const timeLeft = currentRoomData.letterPhaseEndTime - Date.now();
                 if (timeLeft <= 0) advanceToRoulette(currentRoomData);
@@ -445,7 +445,7 @@ function enterRoomLobby() {
                 state.isRoulette = true;
                 startRoulettePhase(currentRoomData.gameState);
             }
-            // Host avança para o jogo oficial após animação
+            // Host avanÃ§a para o jogo oficial apÃ³s animaÃ§Ã£o
             if (currentRoomData.hostId === currentUser.id && currentRoomData.rouletteEndTime) {
                 const timeLeft = currentRoomData.rouletteEndTime - Date.now();
                 if (timeLeft <= 0) {
@@ -508,15 +508,15 @@ function renderRoomPlayers(data) {
         const card = document.createElement('div');
         card.className = `player-card ${p.isReady ? 'ready' : ''}`;
         card.innerHTML = `
-            ${isHost && !isMe ? `<button class="btn-kick" data-id="${p.id}" title="Expulsar">❌</button>` : ''}
+            ${isHost && !isMe ? `<button class="btn-kick" data-id="${p.id}" title="Expulsar">âŒ</button>` : ''}
             <img src="${escapeHTML(p.avatar)}" class="player-avatar">
-            <strong style="font-size:14px;">${escapeHTML(p.name)} ${isMe ? '(Você)' : ''}</strong>
+            <strong style="font-size:14px;">${escapeHTML(p.name)} ${isMe ? '(VocÃª)' : ''}</strong>
             <span class="status-badge">${p.isReady ? 'PRONTO' : 'AGUARDANDO'}</span>
         `;
         DOM.roomPlayersGrid.appendChild(card);
     });
 
-    // Adicionar eventos para os botões de expulsar
+    // Adicionar eventos para os botÃµes de expulsar
     if (isHost) {
         document.querySelectorAll('.btn-kick').forEach(btn => {
             btn.addEventListener('click', async (e) => {
@@ -536,8 +536,14 @@ function checkReadyStatus(data) {
     
     // Controles do Host
     if (data.hostId === currentUser.id) {
-        DOM.hostControls.classList.remove('hidden');
-        DOM.btnStartGame.disabled = !allReady;
+        DOM.hostControls.classList.add('hidden');
+        if (allReady && data.status === 'waiting') {
+            update(ref(db, `rooms/${currentRoomId}`), {
+                status: 'choosing_letter',
+                letterChoices: null,
+                letterPhaseEndTime: Date.now() + 13000
+            });
+        }
     } else {
         DOM.hostControls.classList.add('hidden');
     }
@@ -559,7 +565,7 @@ function sendMessage() {
     const text = DOM.chatInput.value.trim();
     if (!text || !currentRoomId) return;
     
-    // Guarda a referência da nova mensagem criada
+    // Guarda a referÃªncia da nova mensagem criada
     const newMessageRef = push(ref(db, `rooms/${currentRoomId}/chat`), {
         senderId: currentUser.id,
         senderName: currentUser.name,
@@ -569,7 +575,7 @@ function sendMessage() {
     
     DOM.chatInput.value = '';
 
-    // Remove a mensagem após 60 segundos (60000 milissegundos) para não pesar o banco
+    // Remove a mensagem apÃ³s 60 segundos (60000 milissegundos) para nÃ£o pesar o banco
     setTimeout(() => {
         remove(newMessageRef).catch(() => {});
     }, 60000);
@@ -583,12 +589,12 @@ DOM.chatInput.addEventListener('keypress', (e) => {
 DOM.btnCopyLink.addEventListener('click', () => {
     const inviteLink = `${window.location.origin}${window.location.pathname}?room=${currentRoomId}`;
     navigator.clipboard.writeText(inviteLink).then(() => {
-        DOM.btnCopyLink.textContent = "✅ Copiado!";
-        setTimeout(() => DOM.btnCopyLink.textContent = "🔗 Copiar Link", 2000);
+        DOM.btnCopyLink.textContent = "âœ… Copiado!";
+        setTimeout(() => DOM.btnCopyLink.textContent = "ðŸ”— Copiar Link", 2000);
     });
 });
 
-// Mensagem de Sistema Automática
+// Mensagem de Sistema AutomÃ¡tica
 function sendSystemMessage(text) {
     if (!currentRoomId) return;
     const newMessageRef = push(ref(db, `rooms/${currentRoomId}/chat`), {
@@ -599,7 +605,7 @@ function sendSystemMessage(text) {
     });
     setTimeout(() => {
         remove(newMessageRef).catch(() => {});
-    }, 60000); // Também será apagada automaticamente
+    }, 60000); // TambÃ©m serÃ¡ apagada automaticamente
 }
 
 async function leaveRoom() {
@@ -611,7 +617,7 @@ async function leaveRoom() {
         const playersCount = currentRoomData.players ? Object.keys(currentRoomData.players).length : 0;
         
         if (playersCount <= 1) {
-            // Se for o último a sair, destrói a sala
+            // Se for o Ãºltimo a sair, destrÃ³i a sala
             await remove(ref(db, `rooms/${currentRoomId}`));
         } else if (currentRoomData.hostId === currentUser.id) {
             // Se for o host saindo e tiver mais gente, passa o host para outro
@@ -620,7 +626,7 @@ async function leaveRoom() {
             const newHostName = currentRoomData.players[newHostId].name;
             
             await update(ref(db, `rooms/${currentRoomId}`), { hostId: newHostId, hostName: newHostName });
-            sendSystemMessage(`${currentUser.name} saiu. ${newHostName} agora é o Host.`);
+            sendSystemMessage(`${currentUser.name} saiu. ${newHostName} agora Ã© o Host.`);
             await remove(ref(db, `rooms/${currentRoomId}/players/${currentUser.id}`));
         } else {
             // Jogador comum saindo
@@ -689,13 +695,13 @@ function startLetterChoicePhase() {
 
 DOM.btnSubmitLetter.addEventListener('click', async () => {
     const letter = DOM.inputChosenLetter.value.trim().toUpperCase();
-    if (!letter || !/^[A-Z]$/.test(letter)) return alert("Digite uma letra válida do alfabeto!");
+    if (!letter || !/^[A-Z]$/.test(letter)) return alert("Digite uma letra vÃ¡lida do alfabeto!");
     
     DOM.btnSubmitLetter.disabled = true;
     DOM.btnRandomLetter.disabled = true;
     DOM.btnSubmitLetter.textContent = "Enviado!";
     
-    // Valores primitivos (como texto/letras) precisam do comando 'set' e não 'update'
+    // Valores primitivos (como texto/letras) precisam do comando 'set' e nÃ£o 'update'
     await set(ref(db, `rooms/${currentRoomId}/letterChoices/${currentUser.id}`), letter);
 });
 
@@ -827,7 +833,7 @@ function syncOnlineGame(gameState) {
         
         clearInterval(state.timerInterval);
         state.timerInterval = setInterval(() => {
-            // Relógio baseado na hora universal para manter todos em sincronia
+            // RelÃ³gio baseado na hora universal para manter todos em sincronia
             const timeLeft = Math.max(0, Math.ceil((gameState.turnEndTime - Date.now()) / 1000));
             DOM.gameTimer.textContent = timeLeft;
             
@@ -892,7 +898,7 @@ DOM.btnStop.addEventListener('click', () => {
 
 // Submeter jogo (STOP) apertando ENTER
 document.addEventListener('keydown', (e) => {
-    // Verifica se a tela ativa é a de Jogo e se o botão STOP está visível (indicando que é a minha vez)
+    // Verifica se a tela ativa Ã© a de Jogo e se o botÃ£o STOP estÃ¡ visÃ­vel (indicando que Ã© a minha vez)
     if (e.key === 'Enter' && DOM.game.classList.contains('active') && DOM.btnStop.style.display === 'block') {
         endOnlineTurn();
     }
@@ -922,7 +928,7 @@ function processAnswersAndEvaluate() {
     let acertos = 0;
     let erros = 0;
     
-    // Referência para as respostas originais do banco de dados
+    // ReferÃªncia para as respostas originais do banco de dados
     const dbAnswers = state.roundAnswers;
     
     for (const playerName of state.players) {
@@ -937,7 +943,7 @@ function processAnswersAndEvaluate() {
             const inputEl = playerName === currentUser.name ? document.querySelector(`.theme-answer[data-theme="${theme}"]`) : null;
 
             if (!answer) {
-                status = 'rejected'; // Vazio é errado
+                status = 'rejected'; // Vazio Ã© errado
                 if (playerName === currentUser.name) {
                     erros++;
                     if(inputEl) inputEl.classList.add('shake');
@@ -968,10 +974,10 @@ function processAnswersAndEvaluate() {
         }
     }
 
-    // Atualiza o estado global com as respostas já processadas
+    // Atualiza o estado global com as respostas jÃ¡ processadas
     state.roundAnswers = processedAnswers;
 
-    // Exibe a animação "Just Dance" apenas baseada na performance local
+    // Exibe a animaÃ§Ã£o "Just Dance" apenas baseada na performance local
     if (erros > 0) {
         showJustDanceFeedback('miss');
     } else if (acertos === state.currentThemes.length) {
@@ -998,14 +1004,14 @@ function renderEvaluationScreen() {
                 <small style="color:var(--text-secondary)">por ${item.playerName}</small>
             </div>
             <div class="eval-actions">
-                <button class="btn-text btn-accept" data-index="${index}">👍 Aceitar</button>
-                <button class="btn-text btn-reject" data-index="${index}" style="color:var(--red-apple)">👎 Rejeitar</button>
+                <button class="btn-text btn-accept" data-index="${index}">ðŸ‘ Aceitar</button>
+                <button class="btn-text btn-reject" data-index="${index}" style="color:var(--red-apple)">ðŸ‘Ž Rejeitar</button>
             </div>
         `;
         DOM.evaluationList.appendChild(div);
     });
 
-    // Eventos dos botões de avaliação
+    // Eventos dos botÃµes de avaliaÃ§Ã£o
     document.querySelectorAll('.btn-accept').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const index = e.target.dataset.index;
@@ -1030,14 +1036,14 @@ function renderEvaluationScreen() {
 DOM.btnFinishEvaluation.addEventListener('click', () => {
     // Atualizar status das palavras avaliadas
     state.wordsToEvaluate.forEach(item => {
-        // Se não clicaram em nada, rejeita por padrão
+        // Se nÃ£o clicaram em nada, rejeita por padrÃ£o
         const finalStatus = item.status === 'pending' ? 'rejected' : item.status;
         state.roundAnswers[item.playerName][item.theme].status = finalStatus;
     });
     calculateScores();
 });
 
-// 6. Pontuação e Placar
+// 6. PontuaÃ§Ã£o e Placar
 function calculateScores() {
     // Agrupar respostas para verificar palavras iguais
     const answersByTheme = {}; // { theme: { normalizedWord: [playerName1, playerName2] } }
@@ -1065,7 +1071,7 @@ function calculateScores() {
                 if (count > 1) {
                     roundScore += 5; // Palavra repetida
                 } else {
-                    roundScore += 10; // Palavra única
+                    roundScore += 10; // Palavra Ãºnica
                 }
             }
         });
@@ -1078,7 +1084,7 @@ function calculateScores() {
 function renderScoreboard() {
     DOM.scoreboard.innerHTML = '';
     
-    // Ordenar por pontuação
+    // Ordenar por pontuaÃ§Ã£o
     const sortedPlayers = [...state.players].sort((a, b) => state.scores[b] - state.scores[a]);
 
     sortedPlayers.forEach(p => {
@@ -1107,7 +1113,7 @@ DOM.btnNextRound.addEventListener('click', async () => {
         letterChoices: null
     };
     
-    // Remove o status de "pronto" de todos para forçá-los a dar pronto novamente
+    // Remove o status de "pronto" de todos para forÃ§Ã¡-los a dar pronto novamente
     if (currentRoomData && currentRoomData.players) {
         Object.keys(currentRoomData.players).forEach(playerId => {
             updates[`players/${playerId}/isReady`] = false;
@@ -1120,3 +1126,4 @@ DOM.btnNextRound.addEventListener('click', async () => {
 DOM.btnLeaveResults.addEventListener('click', () => {
     leaveRoom();
 });
+

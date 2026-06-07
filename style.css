@@ -52,7 +52,7 @@ body {
 
 .screen { display: none; }
 .screen.active { display: block; animation: fadeIn 0.4s ease forwards; }
-.screen.hidden { display: none !important; }
+.hidden { display: none !important; }
 
 /* Tipografia */
 .title { font-size: 28px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.5px; }
